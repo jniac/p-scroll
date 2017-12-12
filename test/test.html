@@ -106,11 +106,13 @@
 
 
 		.wrapper-b .block span {
+			opacity: .5;
 			transition: .2s;
 		}
 
 		.wrapper-b .block.enter span {
-			transform: scale(2);
+			opacity: 1;
+			transform: scale(1.5);
 		}
 
 		
@@ -152,14 +154,7 @@
 
 	</div>
 
-	<script type="module">
-
-		import * as testA from './test-a.js'
-		import * as testB from './test-b.js'
-
-		Object.assign(window, testA, testB)
-		
-	</script>
+	<script type="module" src="test.js"></script>
 
 </body>
 </html>

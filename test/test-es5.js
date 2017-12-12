@@ -10,7 +10,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var PScroll = function (exports) {
+(function () {
 	'use strict';
 
 	/**
@@ -1433,11 +1433,140 @@ var PScroll = function (exports) {
 		return ScrollSVG;
 	}();
 
-	exports.Stop = Stop;
-	exports.Interval = Interval;
-	exports.Scroll = Scroll;
-	exports.ScrollHandler = ScrollHandler;
-	exports.ScrollSVG = ScrollSVG;
+	var pScroll = Object.freeze({
+		Stop: Stop,
+		Interval: Interval,
+		Scroll: Scroll,
+		ScrollHandler: ScrollHandler,
+		ScrollSVG: ScrollSVG
+	});
 
-	return exports;
-}({});
+	// creating the scroll
+
+	var scrollA = new Scroll();
+
+	var _iteratorNormalCompletion16 = true;
+	var _didIteratorError16 = false;
+	var _iteratorError16 = undefined;
+
+	try {
+		for (var _iterator16 = document.querySelectorAll('.wrapper-a .block')[Symbol.iterator](), _step16; !(_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done); _iteratorNormalCompletion16 = true) {
+			var element = _step16.value;
+
+
+			var stop = scrollA.stop('+=' + element.offsetHeight);
+
+			element.innerHTML = stop.position;
+		}
+	} catch (err) {
+		_didIteratorError16 = true;
+		_iteratorError16 = err;
+	} finally {
+		try {
+			if (!_iteratorNormalCompletion16 && _iterator16.return) {
+				_iterator16.return();
+			}
+		} finally {
+			if (_didIteratorError16) {
+				throw _iteratorError16;
+			}
+		}
+	}
+
+	scrollA.on('update', function (event) {
+
+		document.querySelector('.wrapper-a .blocks').style.setProperty('transform', 'translateY(' + (-scrollA.position).toFixed(2) + 'px)');
+	});
+
+	// display an SVG for debug
+
+	var scrollASVG = new ScrollSVG({ scroll: scrollA, scale: .5 });
+	document.body.appendChild(scrollASVG.svg);
+
+	// use an handler to detect some fundamental events (wheel max speed)
+
+	var scrollAHandler = new ScrollHandler('.wrapper-a');
+
+	scrollAHandler.on('wheel-increase-speed-y', function (event) {
+
+		scrollA.velocity = event.speed * 20;
+	});
+
+	scrollAHandler.on('wheel-max-speed-y wheel-stop', function (event) {
+
+		scrollA.shoot();
+	});
+
+	var testA = Object.freeze({
+		PScroll: pScroll,
+		scrollA: scrollA,
+		scrollAHandler: scrollAHandler
+	});
+
+	// creating the scroll
+
+	var scrollB = new Scroll();
+
+	scrollB.friction = .000001;
+
+	var sum = 0;
+
+	Array.prototype.forEach.call(document.querySelectorAll('.wrapper-b .block'), function (element) {
+
+		var height = element.offsetHeight;
+
+		var stop = scrollB.stop(sum + height / 2);
+
+		stop.toInterval({ offset: 50 }).on('enter', function (event) {
+
+			element.classList.add('enter');
+		}).on('exit', function (event) {
+
+			element.classList.remove('enter');
+		});
+
+		element.innerHTML = '<span>' + stop.position + '</span>';
+
+		sum += height;
+	});
+
+	scrollB.on('update', function (event) {
+
+		document.querySelector('.wrapper-b .blocks').style.setProperty('transform', 'translateY(' + (-scrollB.position).toFixed(2) + 'px)');
+	});
+
+	scrollB.stop(0).set({
+
+		type: 'trigger'
+
+	});
+	scrollB.shoot();
+
+	// display an SVG for debug
+
+	var scrollBSVG = new ScrollSVG({ scroll: scrollB, scale: .5 });
+	scrollBSVG.svg.style.setProperty('top', '20px');
+	document.body.appendChild(scrollBSVG.svg);
+
+	// use an handler to detect some fundamental events (wheel max speed)
+
+	var scrollBHandler = new ScrollHandler('.wrapper-b');
+
+	scrollBHandler.on('wheel-increase-speed-y', function (event) {
+
+		scrollB.velocity = event.speed * 20;
+	});
+
+	scrollBHandler.on('wheel-max-speed-y wheel-stop', function (event) {
+
+		scrollB.shoot();
+	});
+
+	var testB = Object.freeze({
+		PScroll: pScroll,
+		scrollB: scrollB,
+		scrollBHandler: scrollBHandler
+	});
+
+	Object.assign(window, testA, testB);
+})();
