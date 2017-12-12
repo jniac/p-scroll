@@ -15,7 +15,7 @@ import { Scroll, ScrollHandler, ScrollSVG } from './build/p-scroll.module.js'
 // the Scroll
 
 let scroll = new Scroll()
-scrollB.friction = .0001 // 1e-3 by default (.001)
+scroll.friction = .0001 // 1e-3 by default (.001)
 scroll.stop(1000) // add a stop @ position 1000
 scroll.interval({ min: 0, max: 1000 })
 	.on('update', event => {
@@ -30,6 +30,9 @@ scroll.interval({ min: 0, max: 1000 })
 	})
 
 
+
+
+
 // use a debug svg (to render the scroll timeline)
 
 let scrollSVG = new ScrollSVG({ scroll: scroll, scale: .5 })
@@ -38,20 +41,30 @@ document.body.appendChild(scrollSVG.svg)
 
 
 
+
+
 // create an handler to detect fundamental events (mouse wheel increase phase, break)
 
 let handler = new ScrollHandler('.a div.selector')
 handler.on('wheel-increase-speed-y', event => {
 
-	scrollB.velocity = event.speed * 20
+	scroll.velocity = event.speed * 20
 
 })
 
 handler.on('wheel-max-speed-y wheel-stop', event => {
 
-	scrollB.shoot()
+	scroll.shoot() // scroll will automatically scroll to the most suitable stop (depending on velocity & available stops)
 
 })
+
+
+
+
+
+// once everything is done
+
+scroll.clear() // remove all stops and intervals from scroll
 
 
 ```
