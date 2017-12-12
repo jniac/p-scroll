@@ -591,7 +591,7 @@ function svg(node, attributes) {
 	}
 
 	for (let k in attributes) 
-		attributes[k] !== null ? node.setAttributeNS(null, k, attributes[k]) : node.removeAttributeNS(null, k)
+		attributes[k] === null || attributes[k] === undefined ? node.removeAttributeNS(null, k) : node.setAttributeNS(null, k, attributes[k])
 
 	return node
 
