@@ -69,10 +69,6 @@ scroll.clear() // remove all stops and intervals from scroll
 
 ```
 
-## ScrollSVG example:
-
-<img src="">
-
 ## build
 
 to run ./build.sh **rollup** and **babel** must have been installed globally
