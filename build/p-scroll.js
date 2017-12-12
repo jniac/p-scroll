@@ -801,7 +801,7 @@ var PScroll = function (exports) {
 			key: 'update',
 			value: function update() {
 
-				var position = this.scroll.position;
+				var position = this.scroll._position;
 
 				var local = position - this.position;
 				var state = local < -this.margin ? -1 : local > this.margin ? 1 : 0;
@@ -857,16 +857,17 @@ var PScroll = function (exports) {
 			key: 'update',
 			value: function update() {
 
-				var position = this.scroll.position;
+				var position = this.scroll._position;
+				var position_old = this.scroll._position_old;
 
-				var local = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
-				var state = local < 0 ? -1 : local > 1 ? 1 : 0;
-
-				local = local < 0 ? 0 : local > 1 ? 1 : local;
+				var localRaw = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
+				var localRaw_old = (position_old - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
+				var local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw;
+				var state = localRaw < 0 ? -1 : localRaw > 1 ? 1 : 0;
 
 				_get(Interval.prototype.__proto__ || Object.getPrototypeOf(Interval.prototype), 'update', this).call(this, state, local);
 
-				if (this.local >= 0 && this.local <= 1 || this.local_old >= 0 && this.local_old <= 1) this.dispatchEvent('update');
+				if (localRaw >= 0 && localRaw <= 1 || localRaw_old >= 0 && localRaw_old <= 1) this.dispatchEvent('update');
 			}
 		}, {
 			key: 'remove',
@@ -1462,7 +1463,7 @@ var PScroll = function (exports) {
 		}
 
 		for (var k in attributes) {
-			attributes[k] !== null ? node.setAttributeNS(null, k, attributes[k]) : node.removeAttributeNS(null, k);
+			attributes[k] === null || attributes[k] === undefined ? node.removeAttributeNS(null, k) : node.setAttributeNS(null, k, attributes[k]);
 		}return node;
 	}
 
