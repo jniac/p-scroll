@@ -4,13 +4,12 @@ Physical Scroll
 
 a low-level Scroll based on a physic model (velocity, friction)
 
-### Demo (es5, minified): 
+**Demo (es5, minified):**
 
-[test-es5.html](http://htmlpreview.github.io/?https://github.com/jniac/p-scroll/blob/master/test/test-es5.html) 
+[test-es5.html](http://htmlpreview.github.io/?https://github.com/jniac/p-scroll/blob/master/test/test-es5.html)   
+[counter-demo-es5.html](http://htmlpreview.github.io/?https://github.com/jniac/p-scroll/blob/master/test/demo-counter-es5.html)
 
-[counter-demo-es5.html](http://htmlpreview.github.io/?https://github.com/jniac/p-scroll/blob/master/test/demo-counter-es5.html) 
-
-### basic usage:
+**basic usage:**
 
 ```javascript
 import { Scroll, ScrollHandler, ScrollSVG } from './build/p-scroll.module.js'
