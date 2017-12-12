@@ -1,17 +1,56 @@
 import * as scrolljs from '../src/fg-scroll.js'
 export { scrolljs }
 
+
+
+
+// creating the scroll
+
 export let scroll = new scrolljs.Scroll()
 
-scroll.stop(0)
-scroll.stop(100)
-scroll.stop(140)
-scroll.stop(-10)
-scroll.trigger(110)
+for (let element of document.querySelectorAll('.wrapper-a .block')) {
 
-console.log(scroll.stops.map(v => v.position))
+	let stop = scroll.stop('+=' + element.offsetHeight)
+
+	element.innerHTML = stop.position
+
+}
+
+scroll.on('update', event => {
+
+	document.querySelector('.wrapper-a .blocks')
+		.style.setProperty('transform', `translateY(-${scroll.position}px)`)
+
+})
 
 
-export let scrollSVG = new scrolljs.ScrollSVG().feed(scroll)
+
+
+
+// display an SVG for debug
+
+let scrollSVG = new scrolljs.ScrollSVG({ scroll, scale: .5 })
 document.body.appendChild(scrollSVG.svg)
+
+
+
+
+
+
+// use an handler to detect some fundamental events (wheel max speed)
+
+export let scrollHandler = new scrolljs.ScrollHandler('.wrapper-a')
+
+scrollHandler.on('wheel-increase-speed-y', event => {
+
+	scroll.velocity = event.speed * 20
+
+})
+
+scrollHandler.on('wheel-max-speed-y', event => {
+
+	scroll.shoot()
+
+})
+
 

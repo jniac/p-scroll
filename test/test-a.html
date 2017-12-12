@@ -2,11 +2,113 @@
 <html>
 <head>
 	<title></title>
+	<style type="text/css">
+
+		html {
+			box-sizing: border-box;
+			
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+		}
+
+		* {
+			box-sizing: inherit;
+		}
+
+		body {
+			--padding: 32px;
+			width: 100vw;
+			height: 100vh;
+			margin: 0;
+			padding: var(--padding);
+			font-family: monospace;
+		}
+
+		.demo {
+			width: 100%;
+			height: 100%;
+			display: flex;
+			background-color: #eee;
+		}
+
+		.line-h {
+			position: absolute;
+			width: 100%;
+			height: 1px;
+			top: 50%;
+			background-color: #0006;
+		}
+
+		.wrapper {
+			width: 200px;
+			overflow: hidden;
+		}
+
+		.blocks {
+			margin-top: calc(50vh - var(--padding));
+		}
+
+		.block {
+			padding: 3px;
+			display: flex;
+			align-items: flex-end;
+			justify-content: center;
+			color: white;
+		}
+
+		.block:nth-child(2n) {
+			background-color: #a178c5;
+		}
+
+		.block:nth-child(2n+1) {
+			background-color: blue;
+		}
+
+		.block[data-h="200"] {
+			height: 200px;
+		}
+
+		.block[data-h="20"] {
+			height: 20px;
+		}
+
+		.block[data-h="50"] {
+			height: 50px;
+		}
+
+		.block[data-h="100"] {
+			height: 100px;
+		}
+
+		.block[data-h="200"] {
+			height: 200px;
+		}
+
+		.block[data-h="300"] {
+			height: 300px;
+		}
+		
+	</style>
 </head>
 <body>
 
-	<div class="wrapper">
-		
+	<div class="demo">
+			
+		<div class="line-h"></div>
+		<div class="wrapper wrapper-a">
+			<div class="blocks">
+				<div class="block" data-h="200"></div>
+				<div class="block" data-h="200"></div>
+				<div class="block" data-h="20"></div>
+				<div class="block" data-h="100"></div>
+				<div class="block" data-h="300"></div>
+				<div class="block" data-h="200"></div>
+				<div class="block" data-h="20"></div>
+				<div class="block" data-h="100"></div>
+				<div class="block" data-h="200"></div>
+			</div>
+		</div>
+
 	</div>
 
 	<script type="module">

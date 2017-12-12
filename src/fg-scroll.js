@@ -1,5 +1,6 @@
 
 import * as eventjs from './event.js'
+import { Variable } from './variable.js'
 
 
 
@@ -82,6 +83,8 @@ export class Scroll extends eventjs.EventDispatcher {
 
 		this.epsilon = 1e-6
 
+		this.createStop({ position: 0 })
+
 	}
 
 	get position() { return this._position }
@@ -132,9 +135,38 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	}
 
+	nearestStop({ position, type = null }) {
+
+		let best = {
+
+			d: Infinity,
+			stop: null,
+
+		}
+
+		for (let stop of this.stops) {
+
+			if (type !== null && type !== stop.type)
+				continue
+
+			let d = Math.abs(position - stop.position)
+
+			if (d < best.d) {
+
+				best.d = d
+				best.stop = stop
+
+			}
+
+		}
+
+		return best.stop
+
+	}
+
 	createStop({ position, type = 'bound', margin = .1 }) {
 
-		let stop = new Stop(position, margin)
+		let stop = new Stop(position, type, margin)
 
 		let i = 0, n = this.stops.length
 
@@ -148,11 +180,24 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	}
 
+	shoot() {
+
+		let prevision = this.position - this.velocity / Math.log(this.friction)
+
+		let target = this.nearestStop({ position: prevision, type: StopType.bound })
+
+		this.velocity = (this.position - target.position) * Math.log(this.friction)
+
+	}
+
 
 
 	// shorthands:
 
 	stop(position, type = StopType.bound) {
+
+		if (typeof position === 'string' && position.slice(0, 2) === '+=')
+			position = (this.stops.length ? this.stops[this.stops.length - 1].position : 0) + parseFloat(position.slice(2))
 
 		let stop = this.getStop({ position, type }) || this.createStop({ position })
 
@@ -178,6 +223,107 @@ function udpateScrolls() {
 }
 
 udpateScrolls()
+
+
+
+
+
+
+
+
+
+
+
+const wheelDiscreteInterval = 120
+
+function onMouseWheel(handler, event) {
+
+	event.preventDefault()
+
+	let wheelX = handler.vars.wheelX
+	let wheelY = handler.vars.wheelY
+	let wheelSpeedX = handler.vars.wheelSpeedX
+	let wheelSpeedY = handler.vars.wheelSpeedY
+
+	// https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode
+	let unit = event.deltaMode === 0x00 ? 1 : 16
+	let dx = event.deltaX * unit
+	let dy = event.deltaY * unit
+
+	if (!handler.mouseWheelID) {
+
+		wheelX.reset(dx)
+		wheelY.reset(dy)
+
+		wheelSpeedX.reset(0)
+		wheelSpeedY.reset(0)
+
+		handler.dispatchEvent('wheel-start')
+
+		handler.mouseWheelID = setTimeout(() => mouseWheelStop(handler), wheelDiscreteInterval)
+
+	} else {
+
+		wheelX.newValue(dx)
+		wheelY.newValue(dy)
+
+		wheelSpeedX.newValue(wheelX.average.value)
+		wheelSpeedY.newValue(wheelY.average.value)
+
+		let through
+
+		if (wheelSpeedX.growth.value > 1)
+			handler.dispatchEvent('wheel-increase-speed-x')
+
+		if (wheelSpeedY.growth.value > 1)
+			handler.dispatchEvent('wheel-increase-speed-y', { speed: wheelSpeedY.value })
+
+		if (through = wheelSpeedX.growth.through(1))
+			handler.dispatchEvent(through === -1 ? 'wheel-max-speed-x' : 'wheel-min-speed-x')
+
+		if (through = wheelSpeedY.growth.through(1))
+			handler.dispatchEvent(through === -1 ? 'wheel-max-speed-y' : 'wheel-min-speed-y')
+
+		clearTimeout(handler.mouseWheelID)
+		handler.mouseWheelID = setTimeout(() => mouseWheelStop(handler), wheelDiscreteInterval)
+
+	}
+
+}
+
+function mouseWheelStop(handler) {
+
+	handler.mouseWheelID = null
+	handler.dispatchEvent('wheel-stop')
+
+}
+
+export class ScrollHandler extends eventjs.EventDispatcher {
+
+	constructor(element) {
+
+		super()
+
+		if (typeof element === 'string')
+			element = document.querySelector(element)
+
+		this.vars = {
+
+			wheelX: new Variable(0, 0, 10),
+			wheelY: new Variable(0, 0, 10),
+
+			wheelSpeedX: new Variable(0, 2, 10),
+			wheelSpeedY: new Variable(0, 2, 10),
+
+		}
+
+
+
+		element.addEventListener('mousewheel', event => onMouseWheel(this, event))
+
+	}
+
+}
 
 
 
@@ -222,11 +368,29 @@ function svg(node, attributes) {
 
 }
 
+let svgCSS = {
+
+	position: 'absolute',
+	top: 0,
+	left: 0,
+	width: '100%',
+
+}
+
 export class ScrollSVG {
 
-	constructor() {
+	constructor(options) {
+
+		this.options = Object.assign({
+
+			scale: 1,
+
+		}, options)
 
 		this.svg = svg('svg')
+
+		for (let k in svgCSS)
+			this.svg.style.setProperty(k, svgCSS[k])
 
 		this.g = svg('g', {
 
@@ -238,18 +402,23 @@ export class ScrollSVG {
 
 		})
 
+		if (this.options.scroll)
+			this.init(this.options.scroll)
+
 	}
 
-	feed(scroll) {
+	init(scroll) {
 
 		this.scroll = scroll
+
+		let s = this.options.scale
 
 		this.line = svg('line', {
 
 			parent: this.g,
 
-			x1: this.scroll.stopByIndex(0).position,
-			x2: this.scroll.stopByIndex(-1).position,
+			x1: this.scroll.stopByIndex(0).position * s,
+			x2: this.scroll.stopByIndex(-1).position * s,
 
 			y1: 0,
 			y2: 0,
@@ -260,8 +429,8 @@ export class ScrollSVG {
 
 			parent: this.g,
 
-			x1: this.scroll.position,
-			x2: this.scroll.position,
+			x1: this.scroll.position * s,
+			x2: this.scroll.position * s,
 
 			y1: -4,
 			y2: 4,
@@ -274,8 +443,8 @@ export class ScrollSVG {
 
 			svg(scrollPosition, {
 
-				x1: this.scroll.position,
-				x2: this.scroll.position,
+				x1: this.scroll.position * s,
+				x2: this.scroll.position * s,
 
 			})
 
@@ -287,8 +456,8 @@ export class ScrollSVG {
 
 				parent: this.g,
 
-				x1: stop.position,
-				x2: stop.position,
+				x1: stop.position * s,
+				x2: stop.position * s,
 
 				y1: -4,
 				y2: 4,
