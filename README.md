@@ -17,12 +17,17 @@ import { Scroll, ScrollHandler, ScrollSVG } from './build/p-scroll.module.js'
 let scroll = new Scroll()
 scrollB.friction = .0001 // 1e-3 by default (.001)
 scroll.stop(1000) // add a stop @ position 1000
-scroll.interval({ min: 0, max: 1000}).on('update', event => {
+scroll.interval({ min: 0, max: 1000 })
+	.on('update', event => {
 
-	myElement.style.opacty = event.target.local
+		myElement.style.opacity = event.target.local
 
-})
+	})
+	.on(/enter|exit/, event => {
 
+		myElement.classList.toggle('myClass', event.target.state === 0)
+
+	})
 
 
 // use a debug svg (to render the scroll timeline)
