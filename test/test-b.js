@@ -23,7 +23,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.wrapper-b .block'), ele
 
 
 
-	stop.toInterval({ offset: 90 })
+	stop.toInterval({ offset: 20 })
 		.on('enter', event => {
 
 			element.classList.add('enter')
@@ -41,6 +41,12 @@ Array.prototype.forEach.call(document.querySelectorAll('.wrapper-b .block'), ele
 	element.innerHTML = `<span>${stop.position}</span>`
 
 	sum += height
+
+})
+
+scrollB.interval({ position: 300, offset: 100, color: 'blue' }).on(/enter|exit/, event => {
+
+	document.querySelector('.demo').classList.toggle('foo', event.target.state === 0)
 
 })
 

@@ -2,7 +2,7 @@
 
 Physical Scroll
 
-a scroll based on a physic model (velocity, friction)
+a low-level Scroll based on a physic model (velocity, friction)
 
 basic usage:
 
@@ -15,15 +15,20 @@ import { Scroll, ScrollHandler, ScrollSVG } from './build/p-scroll.module.js'
 // the Scroll
 
 let scroll = new Scroll()
-scrollB.friction = .0001 // .001
-scroll.stop(1000)
+scrollB.friction = .0001 // 1e-3 by default (.001)
+scroll.stop(1000) // add a stop @ position 1000
+scroll.interval({ min: 0, max: 1000}).on('update', event => {
+
+	myElement.style.opacty = event.target.local
+
+})
 
 
 
 // use a debug svg (to render the scroll timeline)
 
-let scrollSVG = new ScrollSVG({ scroll: scrollB, scale: .5 })
-scrollSVG.svg.style['z-index'] = 1000
+let scrollSVG = new ScrollSVG({ scroll: scroll, scale: .5 })
+scrollSVG.svg.style['z-index'] = 1000 // 100 by default
 document.body.appendChild(scrollSVG.svg)
 
 

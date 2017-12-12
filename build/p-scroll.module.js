@@ -56,6 +56,13 @@ function getListenersMatching(target, type, callback = null, options = null) {
 
 function addEventListener(target, type, callback, options = undefined) {
 
+	if (!callback) {
+
+		console.log('event.js: addEventListener callback is null! (ignored)');
+		return
+
+	}
+
 	if (isIterable(target)) {
 
 		for (let element of target)
@@ -556,7 +563,7 @@ class Stop extends ScrollItem {
 
 	static get Type() { return StopType }
 
-	constructor(scroll, position, type = 'bound', margin) {
+	constructor(scroll, position, type = 'bound', margin, name, color = 'red') {
 
 		super();
 
@@ -569,6 +576,8 @@ class Stop extends ScrollItem {
 
 		stopCount++;
 
+		this.update();
+
 	}
 
 	set(params) {
@@ -580,7 +589,9 @@ class Stop extends ScrollItem {
 
 	}
 
-	update(position, position_old) {
+	update() {
+
+		let position = this.scroll.position;
 
 		let local = position - this.position;
 		let state = local < -this.margin ? -1 : local > this.margin ? 1 : 0;
@@ -602,9 +613,9 @@ class Stop extends ScrollItem {
 
 	}
 
-	toInterval({ offset, type = null }) {
+	toInterval({ offset, type = undefined }) {
 
-		return this.scroll.createInterval({ position: this.position - offset, width: offset * 2, type })
+		return this.scroll.interval({ position: this.position, offset, type })
 
 	}
 
@@ -620,22 +631,27 @@ class Stop extends ScrollItem {
 
 class Interval extends ScrollItem {
 
-	constructor(scroll, stopA, stopB) {
+	constructor(scroll, stopMin, stopMax, color) {
 
 		super();
 
 		this.scroll = scroll;
-		this.stopA = stopA;
-		this.stopB = stopB;
+		this.stopMin = stopMin;
+		this.stopMax = stopMax;
+		this.color = color;
+
+		this.update();
 
 	}
 
-	update(position) {
+	update() {
 
-		let local = (position - this.stopA.position) / (this.stopB.position - this.stopA.position);
-		local = local < 0 ? 0 : local > 1 ? 1 : local;
+		let position = this.scroll.position;
 
+		let local = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
 		let state = local < 0 ? -1 : local > 1 ? 1 : 0;
+		
+		local = local < 0 ? 0 : local > 1 ? 1 : local;
 
 		super.update(state, local);
 
@@ -653,10 +669,22 @@ class Interval extends ScrollItem {
 
 		scroll.intervals.splice(index, 1);
 
-		this.stopA.remove();
-		this.stopB.remove();
+		this.stopMin.remove();
+		this.stopMax.remove();
 
 		return this
+
+	}
+
+	overlap(other) {
+
+		return !(other.stopMin.position > this.stopMax.position || other.stopMax.position < this.stopMin.position)
+
+	}
+
+	toString() {
+
+		return `Interval[${this.stopMin.position}, ${this.stopMax.position}]`
 
 	}
 
@@ -686,7 +714,7 @@ class Scroll extends EventDispatcher {
 		this._velocity_new = 0;
 		this._velocity_old = 0;
 
-		this.friction = 0.001;
+		this.friction = 1e-3;
 
 		this.stops = [];
 		this.intervals = [];
@@ -718,10 +746,10 @@ class Scroll extends EventDispatcher {
 		this._velocity = this._velocity_new;
 
 		for (let stop of this.stops)
-			stop.update(this._position, this._position_old);
+			stop.update();
 
 		for (let interval of this.intervals)
-			interval.update(this._position, this.position_old);
+			interval.update();
 
 		this.dispatchEvent('update');
 
@@ -784,9 +812,9 @@ class Scroll extends EventDispatcher {
 
 	}
 
-	createStop({ position, type = 'bound', margin = .1, name = null }) {
+	createStop({ position, type = 'bound', margin = .1, name = null, color = 'red' }) {
 
-		let stop = new Stop(this, position, type, margin, name);
+		let stop = new Stop(this, position, type, margin, name, color);
 
 		let i = 0, n = this.stops.length;
 
@@ -800,14 +828,24 @@ class Scroll extends EventDispatcher {
 
 	}
 
-	createInterval({ position, width, type = 'trigger' }) {
+	getInterval({ min, max, tolerance = 1e-9 }) {
 
-		let stopA, stopB;
+		for (let interval of this.intervals)
+			if (Math.abs(interval.stopMin.position - min) < tolerance && Math.abs(interval.stopMax.position - max) < tolerance)
+				return interval
 
-		stopA = this.createStop({ position: position, type });
-		stopB = this.createStop({ position: position + width, type });
+		return null
 
-		let interval = new Interval(this, stopA, stopB);
+	}
+
+	createInterval({ min, max, stopType = 'trigger', color = 'red' }) {
+
+		let stopMin, stopMax;
+
+		stopMin = this.createStop({ position: min, type: stopType });
+		stopMax = this.createStop({ position: max, type: stopType });
+
+		let interval = new Interval(this, stopMin, stopMax, color);
 
 		this.intervals.push(interval);
 
@@ -833,13 +871,27 @@ class Scroll extends EventDispatcher {
 
 	// shorthands:
 
-	interval({ from, to, position, width }) {
+	interval({ min, max, position, width, offset = 0, stopType = 'trigger', color = 'red' }) {
 
-		if (!isNaN(from) && !isNaN(to)) {
+		if (!isNaN(position) && !isNaN(width))
+			[min, max] = [position, position + width];
 
-			this.createInterval();
+		if (!isNaN(position) && offset > 0)
+			[min, max] = [position, position];
+
+		if (isNaN(min) || isNaN(max)) {
+
+			console.log('p-scroll.js: Scroll().interval unable to parse min & max values:', min, max);
+			return null
 
 		}
+
+		min += -offset;
+		max += offset;
+
+		let interval = this.getInterval({ min, max }) || this.createInterval({ min, max, stopType, color });
+
+		return interval
 
 	}
 
@@ -876,6 +928,11 @@ function udpateScrolls() {
 }
 
 udpateScrolls();
+
+
+
+
+
 
 
 
@@ -992,6 +1049,16 @@ class ScrollHandler extends EventDispatcher {
 
 
 
+
+
+
+
+
+
+
+
+
+
 let svgNS = 'http://www.w3.org/2000/svg';
 
 function svg(node, attributes) {
@@ -1014,8 +1081,8 @@ function svg(node, attributes) {
 
 	}
 
-	for (let k in attributes)
-		node.setAttributeNS(null, k, attributes[k]);
+	for (let k in attributes) 
+		attributes[k] !== null ? node.setAttributeNS(null, k, attributes[k]) : node.removeAttributeNS(null, k);
 
 	return node
 
@@ -1023,10 +1090,11 @@ function svg(node, attributes) {
 
 let svgCSS = {
 
-	position: 'absolute',
+	position: 'fixed',
 	top: 0,
 	left: 0,
 	width: '100%',
+	'z-index': 100,
 
 };
 
@@ -1085,8 +1153,8 @@ class ScrollSVG {
 			x1: this.scroll.position * s,
 			x2: this.scroll.position * s,
 
-			y1: -4,
-			y2: 4,
+			y1: -5,
+			y2: 5,
 
 			'stroke-width': 3,
 
@@ -1105,17 +1173,105 @@ class ScrollSVG {
 
 		this.stops = this.scroll.stops.map(stop => {
 
+			let size = stop.type === StopType.bound ? 5 : 1.5;
+
 			return svg('line', {
 
 				parent: this.g,
 
+				stroke: stop.color,
+
 				x1: stop.position * s,
 				x2: stop.position * s,
 
-				y1: -4,
-				y2: 4,
+				y1: -size,
+				y2: size,
 
 			})
+
+		});
+
+
+
+		let indexedIntervals = [];
+
+		this.intervals = this.scroll.intervals.map(interval => {
+
+			let index = 0;
+
+			for (let a; a = indexedIntervals[index]; index++) {
+
+				let overlap = false;
+
+				for (let b of a)
+					overlap = overlap || b.overlap(interval);
+
+				if (!overlap)
+					break
+
+			}
+
+			indexedIntervals[index] ? indexedIntervals[index].push(interval) : indexedIntervals[index] = [interval];
+
+			let y = 20 + index * 12;
+
+			let g = svg('g', {
+
+				parent: this.g,
+
+				stroke: interval.color,
+
+			});
+
+			g.dataset.interval = interval.stopMin.position + ',' + interval.stopMax.position;
+
+			let line = svg('line', {
+
+				parent: g,
+
+				x1: interval.stopMin.position * s,
+				x2: interval.stopMax.position * s,
+
+				y1: y,
+				y2: y,
+
+
+			});
+
+			let x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local;
+
+			x = (x * s).toFixed(2);
+
+			let pos = svg('line', {
+
+				parent: g,
+
+				x1: x,
+				x2: x,
+
+				y1: y - 5,
+				y2: y + 5,
+
+
+			});
+
+			interval.on(/enter|exit/, event => {
+
+				svg(g, { 'stroke-width': interval.state ? null : 3 });
+
+			});
+
+			interval.on('update', event => {
+
+				let x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local;
+
+				x = (x * s).toFixed(2);
+
+				svg(pos, { x1: x, x2: x });
+
+			});
+
+			return g
 
 		});
 

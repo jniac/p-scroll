@@ -94,6 +94,12 @@ var PScroll = function (exports) {
 		var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : undefined;
 
 
+		if (!callback) {
+
+			console.log('event.js: addEventListener callback is null! (ignored)');
+			return;
+		}
+
 		if (isIterable(target)) {
 			var _iteratorNormalCompletion2 = true;
 			var _didIteratorError2 = false;
@@ -762,6 +768,8 @@ var PScroll = function (exports) {
 		function Stop(scroll, position) {
 			var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'bound';
 			var margin = arguments[3];
+			var name = arguments[4];
+			var color = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'red';
 
 			_classCallCheck(this, Stop);
 
@@ -776,6 +784,8 @@ var PScroll = function (exports) {
 
 			stopCount++;
 
+			_this3.update();
+
 			return _this3;
 		}
 
@@ -789,7 +799,9 @@ var PScroll = function (exports) {
 			}
 		}, {
 			key: 'update',
-			value: function update(position, position_old) {
+			value: function update() {
+
+				var position = this.scroll.position;
 
 				var local = position - this.position;
 				var state = local < -this.margin ? -1 : local > this.margin ? 1 : 0;
@@ -813,10 +825,10 @@ var PScroll = function (exports) {
 			value: function toInterval(_ref) {
 				var offset = _ref.offset,
 				    _ref$type = _ref.type,
-				    type = _ref$type === undefined ? null : _ref$type;
+				    type = _ref$type === undefined ? undefined : _ref$type;
 
 
-				return this.scroll.createInterval({ position: this.position - offset, width: offset * 2, type: type });
+				return this.scroll.interval({ position: this.position, offset: offset, type: type });
 			}
 		}]);
 
@@ -826,26 +838,31 @@ var PScroll = function (exports) {
 	var Interval = function (_ScrollItem2) {
 		_inherits(Interval, _ScrollItem2);
 
-		function Interval(scroll, stopA, stopB) {
+		function Interval(scroll, stopMin, stopMax, color) {
 			_classCallCheck(this, Interval);
 
 			var _this4 = _possibleConstructorReturn(this, (Interval.__proto__ || Object.getPrototypeOf(Interval)).call(this));
 
 			_this4.scroll = scroll;
-			_this4.stopA = stopA;
-			_this4.stopB = stopB;
+			_this4.stopMin = stopMin;
+			_this4.stopMax = stopMax;
+			_this4.color = color;
+
+			_this4.update();
 
 			return _this4;
 		}
 
 		_createClass(Interval, [{
 			key: 'update',
-			value: function update(position) {
+			value: function update() {
 
-				var local = (position - this.stopA.position) / (this.stopB.position - this.stopA.position);
-				local = local < 0 ? 0 : local > 1 ? 1 : local;
+				var position = this.scroll.position;
 
+				var local = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
 				var state = local < 0 ? -1 : local > 1 ? 1 : 0;
+
+				local = local < 0 ? 0 : local > 1 ? 1 : local;
 
 				_get(Interval.prototype.__proto__ || Object.getPrototypeOf(Interval.prototype), 'update', this).call(this, state, local);
 
@@ -861,10 +878,22 @@ var PScroll = function (exports) {
 
 				scroll.intervals.splice(index, 1);
 
-				this.stopA.remove();
-				this.stopB.remove();
+				this.stopMin.remove();
+				this.stopMax.remove();
 
 				return this;
+			}
+		}, {
+			key: 'overlap',
+			value: function overlap(other) {
+
+				return !(other.stopMin.position > this.stopMax.position || other.stopMax.position < this.stopMin.position);
+			}
+		}, {
+			key: 'toString',
+			value: function toString() {
+
+				return 'Interval[' + this.stopMin.position + ', ' + this.stopMax.position + ']';
 			}
 		}]);
 
@@ -891,7 +920,7 @@ var PScroll = function (exports) {
 			_this5._velocity_new = 0;
 			_this5._velocity_old = 0;
 
-			_this5.friction = 0.001;
+			_this5.friction = 1e-3;
 
 			_this5.stops = [];
 			_this5.intervals = [];
@@ -928,7 +957,7 @@ var PScroll = function (exports) {
 					for (var _iterator10 = this.stops[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
 						var stop = _step10.value;
 
-						stop.update(this._position, this._position_old);
+						stop.update();
 					}
 				} catch (err) {
 					_didIteratorError10 = true;
@@ -953,7 +982,7 @@ var PScroll = function (exports) {
 					for (var _iterator11 = this.intervals[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
 						var interval = _step11.value;
 
-						interval.update(this._position, this.position_old);
+						interval.update();
 					}
 				} catch (err) {
 					_didIteratorError11 = true;
@@ -1107,10 +1136,12 @@ var PScroll = function (exports) {
 				    _ref4$margin = _ref4.margin,
 				    margin = _ref4$margin === undefined ? .1 : _ref4$margin,
 				    _ref4$name = _ref4.name,
-				    name = _ref4$name === undefined ? null : _ref4$name;
+				    name = _ref4$name === undefined ? null : _ref4$name,
+				    _ref4$color = _ref4.color,
+				    color = _ref4$color === undefined ? 'red' : _ref4$color;
 
 
-				var stop = new Stop(this, position, type, margin, name);
+				var stop = new Stop(this, position, type, margin, name, color);
 
 				var i = 0,
 				    n = this.stops.length;
@@ -1122,21 +1153,58 @@ var PScroll = function (exports) {
 				return stop;
 			}
 		}, {
+			key: 'getInterval',
+			value: function getInterval(_ref5) {
+				var min = _ref5.min,
+				    max = _ref5.max,
+				    _ref5$tolerance = _ref5.tolerance,
+				    tolerance = _ref5$tolerance === undefined ? 1e-9 : _ref5$tolerance;
+				var _iteratorNormalCompletion15 = true;
+				var _didIteratorError15 = false;
+				var _iteratorError15 = undefined;
+
+				try {
+
+					for (var _iterator15 = this.intervals[Symbol.iterator](), _step15; !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
+						var interval = _step15.value;
+
+						if (Math.abs(interval.stopMin.position - min) < tolerance && Math.abs(interval.stopMax.position - max) < tolerance) return interval;
+					}
+				} catch (err) {
+					_didIteratorError15 = true;
+					_iteratorError15 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion15 && _iterator15.return) {
+							_iterator15.return();
+						}
+					} finally {
+						if (_didIteratorError15) {
+							throw _iteratorError15;
+						}
+					}
+				}
+
+				return null;
+			}
+		}, {
 			key: 'createInterval',
-			value: function createInterval(_ref5) {
-				var position = _ref5.position,
-				    width = _ref5.width,
-				    _ref5$type = _ref5.type,
-				    type = _ref5$type === undefined ? 'trigger' : _ref5$type;
+			value: function createInterval(_ref6) {
+				var min = _ref6.min,
+				    max = _ref6.max,
+				    _ref6$stopType = _ref6.stopType,
+				    stopType = _ref6$stopType === undefined ? 'trigger' : _ref6$stopType,
+				    _ref6$color = _ref6.color,
+				    color = _ref6$color === undefined ? 'red' : _ref6$color;
 
 
-				var stopA = void 0,
-				    stopB = void 0;
+				var stopMin = void 0,
+				    stopMax = void 0;
 
-				stopA = this.createStop({ position: position, type: type });
-				stopB = this.createStop({ position: position + width, type: type });
+				stopMin = this.createStop({ position: min, type: stopType });
+				stopMax = this.createStop({ position: max, type: stopType });
 
-				var interval = new Interval(this, stopA, stopB);
+				var interval = new Interval(this, stopMin, stopMax, color);
 
 				this.intervals.push(interval);
 
@@ -1157,17 +1225,41 @@ var PScroll = function (exports) {
 
 		}, {
 			key: 'interval',
-			value: function interval(_ref6) {
-				var from = _ref6.from,
-				    to = _ref6.to,
-				    position = _ref6.position,
-				    width = _ref6.width;
+			value: function interval(_ref7) {
+				var min = _ref7.min,
+				    max = _ref7.max,
+				    position = _ref7.position,
+				    width = _ref7.width,
+				    _ref7$offset = _ref7.offset,
+				    offset = _ref7$offset === undefined ? 0 : _ref7$offset,
+				    _ref7$stopType = _ref7.stopType,
+				    stopType = _ref7$stopType === undefined ? 'trigger' : _ref7$stopType,
+				    _ref7$color = _ref7.color,
+				    color = _ref7$color === undefined ? 'red' : _ref7$color;
 
 
-				if (!isNaN(from) && !isNaN(to)) {
+				if (!isNaN(position) && !isNaN(width)) {
+					;
 
-					this.createInterval();
+					min = position;
+					max = position + width;
+				}if (!isNaN(position) && offset > 0) {
+					;
+
+					min = position;
+					max = position;
+				}if (isNaN(min) || isNaN(max)) {
+
+					console.log('p-scroll.js: Scroll().interval unable to parse min & max values:', min, max);
+					return null;
 				}
+
+				min += -offset;
+				max += offset;
+
+				var interval = this.getInterval({ min: min, max: max }) || this.createInterval({ min: min, max: max, stopType: stopType, color: color });
+
+				return interval;
 			}
 
 			/**
@@ -1218,27 +1310,27 @@ var PScroll = function (exports) {
 
 		requestAnimationFrame(udpateScrolls);
 
-		var _iteratorNormalCompletion15 = true;
-		var _didIteratorError15 = false;
-		var _iteratorError15 = undefined;
+		var _iteratorNormalCompletion16 = true;
+		var _didIteratorError16 = false;
+		var _iteratorError16 = undefined;
 
 		try {
-			for (var _iterator15 = scrolls[Symbol.iterator](), _step15; !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
-				var _scroll = _step15.value;
+			for (var _iterator16 = scrolls[Symbol.iterator](), _step16; !(_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done); _iteratorNormalCompletion16 = true) {
+				var _scroll = _step16.value;
 
 				_scroll.update();
 			}
 		} catch (err) {
-			_didIteratorError15 = true;
-			_iteratorError15 = err;
+			_didIteratorError16 = true;
+			_iteratorError16 = err;
 		} finally {
 			try {
-				if (!_iteratorNormalCompletion15 && _iterator15.return) {
-					_iterator15.return();
+				if (!_iteratorNormalCompletion16 && _iterator16.return) {
+					_iterator16.return();
 				}
 			} finally {
-				if (_didIteratorError15) {
-					throw _iteratorError15;
+				if (_didIteratorError16) {
+					throw _iteratorError16;
 				}
 			}
 		}
@@ -1356,16 +1448,17 @@ var PScroll = function (exports) {
 		}
 
 		for (var k in attributes) {
-			node.setAttributeNS(null, k, attributes[k]);
+			attributes[k] !== null ? node.setAttributeNS(null, k, attributes[k]) : node.removeAttributeNS(null, k);
 		}return node;
 	}
 
 	var svgCSS = {
 
-		position: 'absolute',
+		position: 'fixed',
 		top: 0,
 		left: 0,
-		width: '100%'
+		width: '100%',
+		'z-index': 100
 
 	};
 
@@ -1424,8 +1517,8 @@ var PScroll = function (exports) {
 					x1: this.scroll.position * s,
 					x2: this.scroll.position * s,
 
-					y1: -4,
-					y2: 4,
+					y1: -5,
+					y2: 5,
 
 					'stroke-width': 3
 
@@ -1443,17 +1536,118 @@ var PScroll = function (exports) {
 
 				this.stops = this.scroll.stops.map(function (stop) {
 
+					var size = stop.type === StopType.bound ? 5 : 1.5;
+
 					return svg('line', {
 
 						parent: _this7.g,
 
+						stroke: stop.color,
+
 						x1: stop.position * s,
 						x2: stop.position * s,
 
-						y1: -4,
-						y2: 4
+						y1: -size,
+						y2: size
 
 					});
+				});
+
+				var indexedIntervals = [];
+
+				this.intervals = this.scroll.intervals.map(function (interval) {
+
+					var index = 0;
+
+					for (var a; a = indexedIntervals[index]; index++) {
+
+						var overlap = false;
+
+						var _iteratorNormalCompletion17 = true;
+						var _didIteratorError17 = false;
+						var _iteratorError17 = undefined;
+
+						try {
+							for (var _iterator17 = a[Symbol.iterator](), _step17; !(_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done); _iteratorNormalCompletion17 = true) {
+								var b = _step17.value;
+
+								overlap = overlap || b.overlap(interval);
+							}
+						} catch (err) {
+							_didIteratorError17 = true;
+							_iteratorError17 = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion17 && _iterator17.return) {
+									_iterator17.return();
+								}
+							} finally {
+								if (_didIteratorError17) {
+									throw _iteratorError17;
+								}
+							}
+						}
+
+						if (!overlap) break;
+					}
+
+					indexedIntervals[index] ? indexedIntervals[index].push(interval) : indexedIntervals[index] = [interval];
+
+					var y = 20 + index * 12;
+
+					var g = svg('g', {
+
+						parent: _this7.g,
+
+						stroke: interval.color
+
+					});
+
+					g.dataset.interval = interval.stopMin.position + ',' + interval.stopMax.position;
+
+					var line = svg('line', {
+
+						parent: g,
+
+						x1: interval.stopMin.position * s,
+						x2: interval.stopMax.position * s,
+
+						y1: y,
+						y2: y
+
+					});
+
+					var x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local;
+
+					x = (x * s).toFixed(2);
+
+					var pos = svg('line', {
+
+						parent: g,
+
+						x1: x,
+						x2: x,
+
+						y1: y - 5,
+						y2: y + 5
+
+					});
+
+					interval.on(/enter|exit/, function (event) {
+
+						svg(g, { 'stroke-width': interval.state ? null : 3 });
+					});
+
+					interval.on('update', function (event) {
+
+						var x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local;
+
+						x = (x * s).toFixed(2);
+
+						svg(pos, { x1: x, x2: x });
+					});
+
+					return g;
 				});
 
 				return this;
