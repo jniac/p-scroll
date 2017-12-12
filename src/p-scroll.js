@@ -86,7 +86,7 @@ export class Stop extends ScrollItem {
 
 	update() {
 
-		let position = this.scroll.position
+		let position = this.scroll._position
 
 		let local = position - this.position
 		let state = local < -this.margin ? -1 : local > this.margin ? 1 : 0
@@ -141,16 +141,17 @@ export class Interval extends ScrollItem {
 
 	update() {
 
-		let position = this.scroll.position
+		let position = this.scroll._position
+		let position_old = this.scroll._position_old
 
-		let local = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position)
-		let state = local < 0 ? -1 : local > 1 ? 1 : 0
+		let localRaw = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position)
+		let localRaw_old = (position_old - this.stopMin.position) / (this.stopMax.position - this.stopMin.position)
+		let local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw
+		let state = localRaw < 0 ? -1 : localRaw > 1 ? 1 : 0
 		
-		local = local < 0 ? 0 : local > 1 ? 1 : local
-
 		super.update(state, local)
 
-		if ((this.local >= 0 && this.local <= 1) || this.local_old >= 0 && this.local_old <= 1)
+		if ((localRaw >= 0 && localRaw <= 1) || localRaw_old >= 0 && localRaw_old <= 1)
 			this.dispatchEvent('update')
 
 	}
