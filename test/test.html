@@ -47,6 +47,10 @@
 			overflow: hidden;
 		}
 
+		.wrapper + .wrapper {
+			margin-left: 32px;
+		}
+
 		.blocks {
 			margin-top: calc(50vh - var(--padding));
 		}
@@ -54,7 +58,7 @@
 		.block {
 			padding: 3px;
 			display: flex;
-			align-items: flex-end;
+			align-items: center;
 			justify-content: center;
 			color: white;
 		}
@@ -90,6 +94,25 @@
 		.block[data-h="300"] {
 			height: 300px;
 		}
+
+
+
+
+
+		.wrapper-a .block {
+			align-items: flex-end;
+		}
+
+
+
+		.wrapper-b .block span {
+			transition: .2s;
+		}
+
+		.wrapper-b .block.enter span {
+			transform: scale(2);
+		}
+
 		
 	</style>
 </head>
@@ -98,7 +121,22 @@
 	<div class="demo">
 			
 		<div class="line-h"></div>
+		
 		<div class="wrapper wrapper-a">
+			<div class="blocks">
+				<div class="block" data-h="200"></div>
+				<div class="block" data-h="200"></div>
+				<div class="block" data-h="20"></div>
+				<div class="block" data-h="100"></div>
+				<div class="block" data-h="300"></div>
+				<div class="block" data-h="200"></div>
+				<div class="block" data-h="20"></div>
+				<div class="block" data-h="100"></div>
+				<div class="block" data-h="200"></div>
+			</div>
+		</div>
+
+		<div class="wrapper wrapper-b">
 			<div class="blocks">
 				<div class="block" data-h="200"></div>
 				<div class="block" data-h="200"></div>
@@ -116,8 +154,10 @@
 
 	<script type="module">
 
-		import * as main from './test-a.js'
-		Object.assign(window, main)
+		import * as testA from './test-a.js'
+		import * as testB from './test-b.js'
+
+		Object.assign(window, testA, testB)
 		
 	</script>
 

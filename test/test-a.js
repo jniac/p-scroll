@@ -4,22 +4,25 @@ export { PScroll }
 
 
 
+
+
+
 // creating the scroll
 
-export let scroll = new PScroll.Scroll()
+export let scrollA = new PScroll.Scroll()
 
 for (let element of document.querySelectorAll('.wrapper-a .block')) {
 
-	let stop = scroll.stop('+=' + element.offsetHeight)
+	let stop = scrollA.stop('+=' + element.offsetHeight)
 
 	element.innerHTML = stop.position
 
 }
 
-scroll.on('update', event => {
+scrollA.on('update', event => {
 
 	document.querySelector('.wrapper-a .blocks')
-		.style.setProperty('transform', `translateY(-${scroll.position}px)`)
+		.style.setProperty('transform', `translateY(${(-scrollA.position).toFixed(2)}px)`)
 
 })
 
@@ -27,10 +30,14 @@ scroll.on('update', event => {
 
 
 
+
+
 // display an SVG for debug
 
-let scrollSVG = new PScroll.ScrollSVG({ scroll, scale: .5 })
-document.body.appendChild(scrollSVG.svg)
+let scrollASVG = new PScroll.ScrollSVG({ scroll: scrollA, scale: .5 })
+document.body.appendChild(scrollASVG.svg)
+
+
 
 
 
@@ -39,17 +46,17 @@ document.body.appendChild(scrollSVG.svg)
 
 // use an handler to detect some fundamental events (wheel max speed)
 
-export let scrollHandler = new PScroll.ScrollHandler('.wrapper-a')
+export let scrollAHandler = new PScroll.ScrollHandler('.wrapper-a')
 
-scrollHandler.on('wheel-increase-speed-y', event => {
+scrollAHandler.on('wheel-increase-speed-y', event => {
 
-	scroll.velocity = event.speed * 20
+	scrollA.velocity = event.speed * 20
 
 })
 
-scrollHandler.on('wheel-max-speed-y wheel-stop', event => {
+scrollAHandler.on('wheel-max-speed-y wheel-stop', event => {
 
-	scroll.shoot()
+	scrollA.shoot()
 
 })
 

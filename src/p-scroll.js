@@ -8,7 +8,36 @@ import { Variable } from './variable.js'
 
 
 
+class ScrollItem extends eventjs.EventDispatcher {
 
+	update(state, local) {
+
+		let state_old = this.state_old = this.state
+		this.state = state
+
+		if (state !== state_old) {
+
+			if (state === 0 && state_old !== 0)
+				this.dispatchEvent('enter')
+
+			if (state !== 0 && state_old === 0)
+				this.dispatchEvent('exit')
+
+			if (state !== 0 && state_old !== 0) {
+
+				this.state = 0
+				this.dispatchEvent('touch')
+
+				this.state = state
+				this.dispatchEvent('leave')
+
+			}
+
+		}
+
+	}
+
+}
 
 const StopType = {
 
@@ -17,24 +46,61 @@ const StopType = {
 
 }
 
-export class Stop extends eventjs.EventDispatcher {
+let stopCount = 0
+
+export class Stop extends ScrollItem {
 
 	static get Type() { return StopType }
 
-	constructor(position, type = 'bound', margin) {
+	constructor(scroll, position, type = 'bound', margin) {
 
 		super()
+
+		this.scroll = scroll
 
 		this.position = position
 		this.type = type
 		this.margin = margin
+		this.name = name || 'stop-' + stopCount
+
+		stopCount++
+
+	}
+
+	set(params) {
+
+		for (let k in params)
+			this[k] = params[k]
+
+		return this
 
 	}
 
 	update(position, position_old) {
 
-		this.scrollPosition = position - this.position
-		this.state = this.scrollPosition < -this.margin ? -1 : this.scrollPosition > this.margin ? 1 : 0
+		let local = position - this.position
+		let state = local < -this.margin ? -1 : local > this.margin ? 1 : 0
+
+		super.update(state, local)
+
+	}
+
+	remove() {
+
+		if (!this.scroll)
+			return this
+
+		let index = this.scroll.stops.indexOf(this)
+
+		scroll.stops.splice(index, 1)
+
+		return this
+
+	}
+
+	toInterval({ offset, type = null }) {
+
+		return this.scroll.createInterval({ position: this.position - offset, width: offset * 2, type })
 
 	}
 
@@ -48,7 +114,42 @@ export class Stop extends eventjs.EventDispatcher {
 
 
 
-export class Interval extends eventjs.EventDispatcher {
+export class Interval extends ScrollItem {
+
+	constructor(scroll, stopA, stopB) {
+
+		super()
+
+		this.scroll = scroll
+		this.stopA = stopA
+		this.stopB = stopB
+
+	}
+
+	update(position) {
+
+		let local = (position - this.stopA.position) / (this.stopB.position - this.stopA.position)
+		let state = local < 0 ? -1 : local > 1 ? 1 : 0
+
+		super.update(state, local)
+
+	}
+
+	remove() {
+
+		if (!this.scroll)
+			return this
+
+		let index = this.scroll.intervals.indexOf(this)
+
+		scroll.intervals.splice(index, 1)
+
+		this.stopA.remove()
+		this.stopB.remove()
+
+		return this
+
+	}
 
 }
 
@@ -81,7 +182,7 @@ export class Scroll extends eventjs.EventDispatcher {
 		this.stops = []
 		this.intervals = []
 
-		this.epsilon = 1e-6
+		this.epsilon = 1e-3
 
 		this.createStop({ position: 0 })
 
@@ -125,6 +226,16 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	}
 
+	stopByName(name) {
+
+		for (let stop of this.stops)
+			if (stop.name === name)
+				return stop
+
+		return null
+
+	}
+
 	getStop({ position, type = null, tolerance = 1e-9 }) {
 
 		for (let stop of this.stops)
@@ -164,9 +275,9 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	}
 
-	createStop({ position, type = 'bound', margin = .1 }) {
+	createStop({ position, type = 'bound', margin = .1, name = null }) {
 
-		let stop = new Stop(position, type, margin)
+		let stop = new Stop(this, position, type, margin, name)
 
 		let i = 0, n = this.stops.length
 
@@ -179,6 +290,25 @@ export class Scroll extends eventjs.EventDispatcher {
 		return stop
 
 	}
+
+	createInterval({ position, width, type = 'trigger' }) {
+
+		let stopA, stopB
+
+		stopA = this.createStop({ position: position, type })
+		stopB = this.createStop({ position: position + width, type })
+
+		let interval = new Interval(this, stopA, stopB)
+
+		this.intervals.push(interval)
+
+		return interval
+
+	}
+
+
+
+
 
 	shoot() {
 
@@ -199,7 +329,7 @@ export class Scroll extends eventjs.EventDispatcher {
 		if (typeof position === 'string' && position.slice(0, 2) === '+=')
 			position = (this.stops.length ? this.stops[this.stops.length - 1].position : 0) + parseFloat(position.slice(2))
 
-		let stop = this.getStop({ position, type }) || this.createStop({ position })
+		let stop = this.getStop({ position, type }) || this.createStop({ position, type })
 
 		return stop
 
