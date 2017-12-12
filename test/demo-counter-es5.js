@@ -1,3 +1,5 @@
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -10,7 +12,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var PScroll = function (exports) {
+(function () {
 	'use strict';
 
 	/**
@@ -1003,9 +1005,9 @@ var PScroll = function (exports) {
 
 				try {
 					for (var _iterator10 = this.stops[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
-						var stop = _step10.value;
+						var _stop = _step10.value;
 
-						stop.update();
+						_stop.update();
 					}
 				} catch (err) {
 					_didIteratorError10 = true;
@@ -1067,9 +1069,9 @@ var PScroll = function (exports) {
 				try {
 
 					for (var _iterator12 = this.stops[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
-						var stop = _step12.value;
+						var _stop2 = _step12.value;
 
-						if (stop.name === name) return stop;
+						if (_stop2.name === name) return _stop2;
 					}
 				} catch (err) {
 					_didIteratorError12 = true;
@@ -1103,9 +1105,9 @@ var PScroll = function (exports) {
 				try {
 
 					for (var _iterator13 = this.stops[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
-						var stop = _step13.value;
+						var _stop3 = _step13.value;
 
-						if ((type === null || type === stop.type) && Math.abs(stop.position - position) < tolerance) return stop;
+						if ((type === null || type === _stop3.type) && Math.abs(_stop3.position - position) < tolerance) return _stop3;
 					}
 				} catch (err) {
 					_didIteratorError13 = true;
@@ -1145,17 +1147,17 @@ var PScroll = function (exports) {
 
 				try {
 					for (var _iterator14 = this.stops[Symbol.iterator](), _step14; !(_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done); _iteratorNormalCompletion14 = true) {
-						var stop = _step14.value;
+						var _stop4 = _step14.value;
 
 
-						if (type !== null && type !== stop.type) continue;
+						if (type !== null && type !== _stop4.type) continue;
 
-						var d = Math.abs(position - stop.position);
+						var d = Math.abs(position - _stop4.position);
 
 						if (d < best.d) {
 
 							best.d = d;
-							best.stop = stop;
+							best.stop = _stop4;
 						}
 					}
 				} catch (err) {
@@ -1723,11 +1725,138 @@ var PScroll = function (exports) {
 		return ScrollSVG;
 	}();
 
-	exports.Stop = Stop;
-	exports.Interval = Interval;
-	exports.Scroll = Scroll;
-	exports.ScrollHandler = ScrollHandler;
-	exports.ScrollSVG = ScrollSVG;
+	var coef = function coef(n, min, max) {
+		var clamp = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
+		return clamp && n < min ? 0 : clamp && n > max ? 1 : (n - min) / (max - min);
+	};
 
-	return exports;
-}({});
+	var mix = function mix(a, b, ratio) {
+		return a + (b - a) * ratio;
+	};
+
+	var years = '\n\n1781 : Joseph Priestley creates water by igniting hydrogen and oxygen\n1800 : William Nicholson and Anthony Carlisle use electrolysis to separate water into hydrogen and oxygen\n1815 : William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton;\n1838 : Richard Laming hypothesized a subatomic particle carrying electric charge;\n1858 : Julius Pl\xFCcker produced cathode rays;\n1874 : George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it;\n1886 : Eugene Goldstein produced anode rays;\n1897 : J. J. Thomson discovered the electron;\n1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium;\n1900 : Paul Villard discovered the gamma ray in uranium decay.\n\n'.trim().split('\n').map(function (str, i) {
+		var _str$split = str.split(' : '),
+		    _str$split2 = _slicedToArray(_str$split, 2),
+		    year = _str$split2[0],
+		    comment = _str$split2[1];
+
+		year = parseFloat(year);
+
+		stop = year - 1781 + i * 4;
+
+		return { year: year, comment: comment, stop: stop };
+	});
+
+	// init digits
+
+	var _iteratorNormalCompletion18 = true;
+	var _didIteratorError18 = false;
+	var _iteratorError18 = undefined;
+
+	try {
+		for (var _iterator18 = document.querySelectorAll('.counter .digit').entries()[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
+			var _step18$value = _slicedToArray(_step18.value, 2),
+			    index = _step18$value[0],
+			    element = _step18$value[1];
+
+			var wrapper = document.createElement('div');
+			wrapper.classList.add('wrapper');
+			element.appendChild(wrapper);
+
+			for (var i = 0; i < 11; i++) {
+
+				var div = document.createElement('div');
+				div.innerHTML = i % 10;
+				wrapper.appendChild(div);
+			}
+		}
+
+		// displaying the suitable digits
+	} catch (err) {
+		_didIteratorError18 = true;
+		_iteratorError18 = err;
+	} finally {
+		try {
+			if (!_iteratorNormalCompletion18 && _iterator18.return) {
+				_iterator18.return();
+			}
+		} finally {
+			if (_didIteratorError18) {
+				throw _iteratorError18;
+			}
+		}
+	}
+
+	function setDate(year) {
+
+		var d0 = year % 10;
+		var d1 = Math.floor(year / 10) % 10 + coef(year % 10, 10 - 1, 10);
+		var d2 = Math.floor(year / 100) % 10 + coef(year % 100, 100 - 1, 100);
+		var d3 = Math.floor(year / 1000) % 10 + coef(year % 1000, 1000 - 1, 1000);
+
+		var digits = document.querySelectorAll('.counter .digit .wrapper');
+
+		var a = [d3, d2, d1, d0];
+
+		a.forEach(function (d, i) {
+
+			digits[i].style.transform = 'translateY(' + -d + 'em)';
+		});
+	}
+
+	//
+
+	var scroll$1 = new Scroll();
+
+	years.forEach(function (date, i) {
+
+		scroll$1.stop(date.stop).toInterval({ offset: 1 }).on('enter', function (event) {
+
+			document.body.style['background-color'] = 'hsl(' + (360 * Math.random()).toFixed(0) + ',50%,80%)';
+
+			var comment = document.querySelector('.comment');
+
+			comment.classList.add('hidden');
+
+			setTimeout(function () {
+
+				comment.innerHTML = date.comment;
+				comment.classList.remove('hidden');
+			}, 200);
+		}).on('exit', function (event) {
+
+			// console.log(event.target)
+
+		});
+
+		if (i) {
+
+			var prev = years[i - 1];
+
+			scroll$1.interval({ min: prev.stop, max: date.stop }).on('update', function (event) {
+
+				var year = mix(prev.year, date.year, event.target.local);
+
+				setDate(year);
+			});
+		}
+	});
+
+	// create an handler to detect fundamental events (mouse wheel increase phase, break)
+
+	var handler = new ScrollHandler('body');
+	handler.on('wheel-increase-speed-y', function (event) {
+
+		scroll$1.velocity = event.speed;
+	});
+
+	handler.on('wheel-max-speed-y wheel-stop', function (event) {
+
+		scroll$1.shoot(); // scroll will automatically scroll to the most suitable stop (depending on velocity & available stops)
+	});
+
+	// debug
+
+	var scrollSVG = new ScrollSVG({ scroll: scroll$1, scale: 7, color: '#333' });
+	document.body.appendChild(scrollSVG.svg);
+})();

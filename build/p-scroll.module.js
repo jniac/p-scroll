@@ -531,7 +531,7 @@ class ScrollItem extends EventDispatcher {
 
 		if (state !== state_old) {
 
-			if (state === 0 && state_old !== 0)
+			if (state === 0 && (state_old !== 0))
 				this.trigger('enter');
 
 			if (state !== 0 && state_old === 0)
@@ -563,7 +563,7 @@ class Stop extends ScrollItem {
 
 	static get Type() { return StopType }
 
-	constructor(scroll, position, type = 'bound', margin, name, color = 'red') {
+	constructor(scroll, position, type = 'bound', margin, name = null, color = null) {
 
 		super();
 
@@ -573,10 +573,11 @@ class Stop extends ScrollItem {
 		this.type = type;
 		this.margin = margin;
 		this.name = name || 'stop-' + stopCount;
+		this.color = color;
 
 		stopCount++;
 
-		this.update();
+		// this.update()
 
 	}
 
@@ -631,7 +632,7 @@ class Stop extends ScrollItem {
 
 class Interval extends ScrollItem {
 
-	constructor(scroll, stopMin, stopMax, color) {
+	constructor(scroll, stopMin, stopMax, name = null, color = null) {
 
 		super();
 
@@ -639,8 +640,11 @@ class Interval extends ScrollItem {
 		this.stopMin = stopMin;
 		this.stopMax = stopMax;
 		this.color = color;
+		this.name = name || 'stop-' + stopCount;
 
-		this.update();
+		
+
+		// this.update()
 
 	}
 
@@ -701,7 +705,7 @@ let scrolls = [];
 
 class Scroll extends EventDispatcher {
 
-	constructor() {
+	constructor({ autoStart = true } = {}) {
 
 		super();
 
@@ -724,6 +728,9 @@ class Scroll extends EventDispatcher {
 
 		this.createStop({ position: 0 });
 
+		if (autoStart)
+			setTimeout(() => this.start(), 0);
+
 	}
 
 	get position() { return this._position }
@@ -731,6 +738,20 @@ class Scroll extends EventDispatcher {
 
 	get velocity() { return this._velocity }
 	set velocity(value) { this._velocity_new = value; }
+
+	start({ position = 0 } = {}) {
+
+		this.started = true;
+
+		this._position = position;
+		this._position_new = position;
+		this._position_old = Infinity;
+
+		this.update({ force: true });
+
+		this.dispatchEvent('start');
+
+	}
 
 	clear() {
 
@@ -746,7 +767,7 @@ class Scroll extends EventDispatcher {
 
 	}
 
-	update(dt = 1 / 60) {
+	update({ dt = 1 / 60, force = false } = {}) {
 
 		this._position_old = this._position_new;
 		this._velocity_old = this._velocity_new;
@@ -754,7 +775,7 @@ class Scroll extends EventDispatcher {
 		this._velocity_new *= Math.pow(this.friction, dt);
 		this._position_new += (this._velocity_new + this._velocity_old) / 2 * dt;
 
-		if (Math.abs(this._position - this._position_new) < this.epsilon)
+		if (!force && Math.abs(this._position - this._position_new) < this.epsilon)
 			return this
 
 		this._position = this._position_new;
@@ -827,7 +848,7 @@ class Scroll extends EventDispatcher {
 
 	}
 
-	createStop({ position, type = 'bound', margin = .1, name = null, color = 'red' }) {
+	createStop({ position, type = 'bound', margin = .1, name = null, color = null }) {
 
 		let stop = new Stop(this, position, type, margin, name, color);
 
@@ -853,14 +874,14 @@ class Scroll extends EventDispatcher {
 
 	}
 
-	createInterval({ min, max, stopType = 'trigger', color = 'red' }) {
+	createInterval({ min, max, stopType = 'trigger', color = null, name = null }) {
 
 		let stopMin, stopMax;
 
 		stopMin = this.createStop({ position: min, type: stopType });
 		stopMax = this.createStop({ position: max, type: stopType });
 
-		let interval = new Interval(this, stopMin, stopMax, color);
+		let interval = new Interval(this, stopMin, stopMax, name, color);
 
 		this.intervals.push(interval);
 
@@ -886,7 +907,7 @@ class Scroll extends EventDispatcher {
 
 	// shorthands:
 
-	interval({ min, max, position, width, offset = 0, stopType = 'trigger', color = 'red' }) {
+	interval({ min, max, position, width, offset = 0, stopType = 'trigger', color = null }) {
 
 		if (!isNaN(position) && !isNaN(width))
 			[min, max] = [position, position + width];
@@ -938,7 +959,8 @@ function udpateScrolls() {
 	requestAnimationFrame(udpateScrolls);
 
 	for (let scroll of scrolls)
-		scroll.update();
+		if (scroll.started)
+			scroll.update();
 
 }
 
@@ -1120,6 +1142,7 @@ class ScrollSVG {
 		this.options = Object.assign({
 
 			scale: 1,
+			color: 'red',
 
 		}, options);
 
@@ -1133,7 +1156,7 @@ class ScrollSVG {
 			parent: this.svg,
 
 			fill: 'none',
-			stroke: 'red',
+			stroke: this.options.color,
 			transform: 'translate(20, 20)'
 
 		});
@@ -1180,8 +1203,8 @@ class ScrollSVG {
 
 			parent: this.g,
 
-			x1: this.scroll.position * s,
-			x2: this.scroll.position * s,
+			x1: this.scroll.position * s || 0,
+			x2: this.scroll.position * s || 0,
 
 			y1: -5,
 			y2: 5,
@@ -1268,7 +1291,8 @@ class ScrollSVG {
 
 			});
 
-			let x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local;
+			// (interval.local || 0) : avoid initialization bug (interval.local === NaN)
+			let x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * (interval.local || 0);
 
 			x = (x * s).toFixed(2);
 

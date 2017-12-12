@@ -9,22 +9,24 @@ const mix = (a, b, ratio) => a + (b - a) * ratio
 
 let years = `
 
-1815 – William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton;
-1838 – Richard Laming hypothesized a subatomic particle carrying electric charge;
-1858 – Julius Plücker produced cathode rays;
-1874 – George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it;
-1886 – Eugene Goldstein produced anode rays;
-1897 – J. J. Thomson discovered the electron;
-1899 – Ernest Rutherford discovered the alpha and beta particles emitted by uranium;
-1900 – Paul Villard discovered the gamma ray in uranium decay.
+1781 : Joseph Priestley creates water by igniting hydrogen and oxygen
+1800 : William Nicholson and Anthony Carlisle use electrolysis to separate water into hydrogen and oxygen
+1815 : William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton;
+1838 : Richard Laming hypothesized a subatomic particle carrying electric charge;
+1858 : Julius Plücker produced cathode rays;
+1874 : George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it;
+1886 : Eugene Goldstein produced anode rays;
+1897 : J. J. Thomson discovered the electron;
+1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium;
+1900 : Paul Villard discovered the gamma ray in uranium decay.
 
-`.trim().split('\n').map(str => {
+`.trim().split('\n').map((str, i) => {
 
-	let [year, comment] = str.split(' – ')
+	let [year, comment] = str.split(' : ')
 
 	year = parseFloat(year)
 
-	stop = year - 1815
+	stop = year - 1781 + i * 4
 
 	return { year, comment, stop }
 
@@ -67,7 +69,7 @@ for (let [index, element] of document.querySelectorAll('.counter .digit').entrie
 
 // displaying the suitable digits
 
-export function setDate(year) {
+function setDate(year) {
 
 	let d0 = year % 10
 	let d1 = Math.floor(year / 10) % 10 + coef(year % 10, 10 - 1, 10)
@@ -96,7 +98,7 @@ export function setDate(year) {
 
 //
 
-export let scroll = new Scroll()
+let scroll = new Scroll()
 
 years.forEach((date, i) => {
 
@@ -104,14 +106,23 @@ years.forEach((date, i) => {
 		.toInterval({ offset: 1 })
 			.on('enter', event => {
 
+				document.body.style['background-color'] = `hsl(${(360 * Math.random()).toFixed(0)},50%,80%)`
+
 				let comment = document.querySelector('.comment')
 
-				comment.innerHTML = date.comment
+				comment.classList.add('hidden')
+
+				setTimeout(() => {
+
+					comment.innerHTML = date.comment
+					comment.classList.remove('hidden')
+
+				}, 200)
 
 			})
 			.on('exit', event => {
 
-				console.log(event.target)
+				// console.log(event.target)
 
 			})
 
@@ -155,7 +166,7 @@ handler.on('wheel-max-speed-y wheel-stop', event => {
 
 // debug
 
-let scrollSVG = new ScrollSVG({ scroll: scroll, scale: 10 })
+let scrollSVG = new ScrollSVG({ scroll: scroll, scale: 7, color: '#333' })
 document.body.appendChild(scrollSVG.svg)
 
 

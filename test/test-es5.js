@@ -768,8 +768,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function Stop(scroll, position) {
 			var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'bound';
 			var margin = arguments[3];
-			var name = arguments[4];
-			var color = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'red';
+			var name = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+			var color = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
 
 			_classCallCheck(this, Stop);
 
@@ -781,10 +781,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			_this3.type = type;
 			_this3.margin = margin;
 			_this3.name = name || 'stop-' + stopCount;
+			_this3.color = color;
 
 			stopCount++;
 
-			_this3.update();
+			// this.update()
 
 			return _this3;
 		}
@@ -838,7 +839,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	var Interval = function (_ScrollItem2) {
 		_inherits(Interval, _ScrollItem2);
 
-		function Interval(scroll, stopMin, stopMax, color) {
+		function Interval(scroll, stopMin, stopMax) {
+			var name = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+			var color = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+
 			_classCallCheck(this, Interval);
 
 			var _this4 = _possibleConstructorReturn(this, (Interval.__proto__ || Object.getPrototypeOf(Interval)).call(this));
@@ -847,8 +851,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			_this4.stopMin = stopMin;
 			_this4.stopMax = stopMax;
 			_this4.color = color;
+			_this4.name = name || 'stop-' + stopCount;
 
-			_this4.update();
+			// this.update()
 
 			return _this4;
 		}
@@ -907,6 +912,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		_inherits(Scroll, _EventDispatcher2);
 
 		function Scroll() {
+			var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+			    _ref2$autoStart = _ref2.autoStart,
+			    autoStart = _ref2$autoStart === undefined ? true : _ref2$autoStart;
+
 			_classCallCheck(this, Scroll);
 
 			var _this5 = _possibleConstructorReturn(this, (Scroll.__proto__ || Object.getPrototypeOf(Scroll)).call(this));
@@ -930,10 +939,31 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			_this5.createStop({ position: 0 });
 
+			if (autoStart) setTimeout(function () {
+				return _this5.start();
+			}, 0);
+
 			return _this5;
 		}
 
 		_createClass(Scroll, [{
+			key: 'start',
+			value: function start() {
+				var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+				    _ref3$position = _ref3.position,
+				    position = _ref3$position === undefined ? 0 : _ref3$position;
+
+				this.started = true;
+
+				this._position = position;
+				this._position_new = position;
+				this._position_old = Infinity;
+
+				this.update({ force: true });
+
+				this.dispatchEvent('start');
+			}
+		}, {
 			key: 'clear',
 			value: function clear() {
 
@@ -950,8 +980,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}, {
 			key: 'update',
 			value: function update() {
-				var dt = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1 / 60;
-
+				var _ref4 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+				    _ref4$dt = _ref4.dt,
+				    dt = _ref4$dt === undefined ? 1 / 60 : _ref4$dt,
+				    _ref4$force = _ref4.force,
+				    force = _ref4$force === undefined ? false : _ref4$force;
 
 				this._position_old = this._position_new;
 				this._velocity_old = this._velocity_new;
@@ -959,7 +992,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				this._velocity_new *= Math.pow(this.friction, dt);
 				this._position_new += (this._velocity_new + this._velocity_old) / 2 * dt;
 
-				if (Math.abs(this._position - this._position_new) < this.epsilon) return this;
+				if (!force && Math.abs(this._position - this._position_new) < this.epsilon) return this;
 
 				this._position = this._position_new;
 				this._velocity = this._velocity_new;
@@ -1057,12 +1090,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			}
 		}, {
 			key: 'getStop',
-			value: function getStop(_ref2) {
-				var position = _ref2.position,
-				    _ref2$type = _ref2.type,
-				    type = _ref2$type === undefined ? null : _ref2$type,
-				    _ref2$tolerance = _ref2.tolerance,
-				    tolerance = _ref2$tolerance === undefined ? 1e-9 : _ref2$tolerance;
+			value: function getStop(_ref5) {
+				var position = _ref5.position,
+				    _ref5$type = _ref5.type,
+				    type = _ref5$type === undefined ? null : _ref5$type,
+				    _ref5$tolerance = _ref5.tolerance,
+				    tolerance = _ref5$tolerance === undefined ? 1e-9 : _ref5$tolerance;
 				var _iteratorNormalCompletion13 = true;
 				var _didIteratorError13 = false;
 				var _iteratorError13 = undefined;
@@ -1093,10 +1126,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			}
 		}, {
 			key: 'nearestStop',
-			value: function nearestStop(_ref3) {
-				var position = _ref3.position,
-				    _ref3$type = _ref3.type,
-				    type = _ref3$type === undefined ? null : _ref3$type;
+			value: function nearestStop(_ref6) {
+				var position = _ref6.position,
+				    _ref6$type = _ref6.type,
+				    type = _ref6$type === undefined ? null : _ref6$type;
 
 
 				var best = {
@@ -1144,16 +1177,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			}
 		}, {
 			key: 'createStop',
-			value: function createStop(_ref4) {
-				var position = _ref4.position,
-				    _ref4$type = _ref4.type,
-				    type = _ref4$type === undefined ? 'bound' : _ref4$type,
-				    _ref4$margin = _ref4.margin,
-				    margin = _ref4$margin === undefined ? .1 : _ref4$margin,
-				    _ref4$name = _ref4.name,
-				    name = _ref4$name === undefined ? null : _ref4$name,
-				    _ref4$color = _ref4.color,
-				    color = _ref4$color === undefined ? 'red' : _ref4$color;
+			value: function createStop(_ref7) {
+				var position = _ref7.position,
+				    _ref7$type = _ref7.type,
+				    type = _ref7$type === undefined ? 'bound' : _ref7$type,
+				    _ref7$margin = _ref7.margin,
+				    margin = _ref7$margin === undefined ? .1 : _ref7$margin,
+				    _ref7$name = _ref7.name,
+				    name = _ref7$name === undefined ? null : _ref7$name,
+				    _ref7$color = _ref7.color,
+				    color = _ref7$color === undefined ? null : _ref7$color;
 
 
 				var stop = new Stop(this, position, type, margin, name, color);
@@ -1169,11 +1202,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			}
 		}, {
 			key: 'getInterval',
-			value: function getInterval(_ref5) {
-				var min = _ref5.min,
-				    max = _ref5.max,
-				    _ref5$tolerance = _ref5.tolerance,
-				    tolerance = _ref5$tolerance === undefined ? 1e-9 : _ref5$tolerance;
+			value: function getInterval(_ref8) {
+				var min = _ref8.min,
+				    max = _ref8.max,
+				    _ref8$tolerance = _ref8.tolerance,
+				    tolerance = _ref8$tolerance === undefined ? 1e-9 : _ref8$tolerance;
 				var _iteratorNormalCompletion15 = true;
 				var _didIteratorError15 = false;
 				var _iteratorError15 = undefined;
@@ -1204,13 +1237,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			}
 		}, {
 			key: 'createInterval',
-			value: function createInterval(_ref6) {
-				var min = _ref6.min,
-				    max = _ref6.max,
-				    _ref6$stopType = _ref6.stopType,
-				    stopType = _ref6$stopType === undefined ? 'trigger' : _ref6$stopType,
-				    _ref6$color = _ref6.color,
-				    color = _ref6$color === undefined ? 'red' : _ref6$color;
+			value: function createInterval(_ref9) {
+				var min = _ref9.min,
+				    max = _ref9.max,
+				    _ref9$stopType = _ref9.stopType,
+				    stopType = _ref9$stopType === undefined ? 'trigger' : _ref9$stopType,
+				    _ref9$color = _ref9.color,
+				    color = _ref9$color === undefined ? null : _ref9$color,
+				    _ref9$name = _ref9.name,
+				    name = _ref9$name === undefined ? null : _ref9$name;
 
 
 				var stopMin = void 0,
@@ -1219,7 +1254,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				stopMin = this.createStop({ position: min, type: stopType });
 				stopMax = this.createStop({ position: max, type: stopType });
 
-				var interval = new Interval(this, stopMin, stopMax, color);
+				var interval = new Interval(this, stopMin, stopMax, name, color);
 
 				this.intervals.push(interval);
 
@@ -1240,17 +1275,17 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		}, {
 			key: 'interval',
-			value: function interval(_ref7) {
-				var min = _ref7.min,
-				    max = _ref7.max,
-				    position = _ref7.position,
-				    width = _ref7.width,
-				    _ref7$offset = _ref7.offset,
-				    offset = _ref7$offset === undefined ? 0 : _ref7$offset,
-				    _ref7$stopType = _ref7.stopType,
-				    stopType = _ref7$stopType === undefined ? 'trigger' : _ref7$stopType,
-				    _ref7$color = _ref7.color,
-				    color = _ref7$color === undefined ? 'red' : _ref7$color;
+			value: function interval(_ref10) {
+				var min = _ref10.min,
+				    max = _ref10.max,
+				    position = _ref10.position,
+				    width = _ref10.width,
+				    _ref10$offset = _ref10.offset,
+				    offset = _ref10$offset === undefined ? 0 : _ref10$offset,
+				    _ref10$stopType = _ref10.stopType,
+				    stopType = _ref10$stopType === undefined ? 'trigger' : _ref10$stopType,
+				    _ref10$color = _ref10.color,
+				    color = _ref10$color === undefined ? null : _ref10$color;
 
 
 				if (!isNaN(position) && !isNaN(width)) {
@@ -1333,7 +1368,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			for (var _iterator16 = scrolls[Symbol.iterator](), _step16; !(_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done); _iteratorNormalCompletion16 = true) {
 				var _scroll = _step16.value;
 
-				_scroll.update();
+				if (_scroll.started) _scroll.update();
 			}
 		} catch (err) {
 			_didIteratorError16 = true;
@@ -1483,7 +1518,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			this.options = Object.assign({
 
-				scale: 1
+				scale: 1,
+				color: 'red'
 
 			}, options);
 
@@ -1496,7 +1532,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				parent: this.svg,
 
 				fill: 'none',
-				stroke: 'red',
+				stroke: this.options.color,
 				transform: 'translate(20, 20)'
 
 			});
@@ -1543,8 +1579,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					parent: this.g,
 
-					x1: this.scroll.position * s,
-					x2: this.scroll.position * s,
+					x1: this.scroll.position * s || 0,
+					x2: this.scroll.position * s || 0,
 
 					y1: -5,
 					y2: 5,
@@ -1646,7 +1682,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					});
 
-					var x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local;
+					// (interval.local || 0) : avoid initialization bug (interval.local === NaN)
+					var x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * (interval.local || 0);
 
 					x = (x * s).toFixed(2);
 
