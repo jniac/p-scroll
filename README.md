@@ -73,6 +73,17 @@ scroll.clear() // remove all stops and intervals from scroll
 
 ## build
 
+3 builds:    
+2 es5 version:
+```
+build/p-scroll.js
+build/p-scroll.min.js
+```
+1 es2015 version:
+```
+build/p-scroll.module.js
+```
+
 to run ./build.sh **rollup** and **babel** must have been installed globally
 ```
 npm i -g rollup
