@@ -74,7 +74,7 @@ scroll.clear() // remove all stops and intervals from scroll
 ## build
 
 3 builds:    
-# 2 es5 version:
+### 2 es5 version:
 ```
 build/p-scroll.js
 build/p-scroll.min.js
@@ -83,7 +83,7 @@ usage
 ```html
 <script type="text/javascript" src="build/p-scroll.min.js"></script>
 ```
-# 1 es2015 version:
+### 1 es2015 version:
 ```
 build/p-scroll.module.js
 ```
