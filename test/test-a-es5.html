@@ -2,8 +2,6 @@
 <html>
 <head>
 	<title></title>
-<head>
-	<title></title>
 	<style type="text/css">
 
 		html {
@@ -114,11 +112,69 @@
 
 	</div>
 
-	<script type="module">
+	<script type="text/javascript" src="../build/p-scroll.min.js"></script>
+	<script type="text/javascript">
 
-		import * as main from './test-a.js'
-		Object.assign(window, main)
-		
+
+
+
+
+
+
+// creating the scroll
+
+let scroll = new PScroll.Scroll()
+
+for (let element of document.querySelectorAll('.wrapper-a .block')) {
+
+	let stop = scroll.stop('+=' + element.offsetHeight)
+
+	element.innerHTML = stop.position
+
+}
+
+scroll.on('update', event => {
+
+	document.querySelector('.wrapper-a .blocks')
+		.style.setProperty('transform', `translateY(-${scroll.position}px)`)
+
+})
+
+
+
+
+
+// display an SVG for debug
+
+let scrollSVG = new PScroll.ScrollSVG({ scroll, scale: .5 })
+document.body.appendChild(scrollSVG.svg)
+
+
+
+
+
+
+// use an handler to detect some fundamental events (wheel max speed)
+
+let scrollHandler = new PScroll.ScrollHandler('.wrapper-a')
+
+scrollHandler.on('wheel-increase-speed-y', event => {
+
+	scroll.velocity = event.speed * 20
+
+})
+
+scrollHandler.on('wheel-max-speed-y', event => {
+
+	scroll.shoot()
+
+})
+
+
+
+
+
+
 	</script>
 
 </body>

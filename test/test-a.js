@@ -1,12 +1,12 @@
-import * as scrolljs from '../src/fg-scroll.js'
-export { scrolljs }
+import * as PScroll from '../src/p-scroll.js'
+export { PScroll }
 
 
 
 
 // creating the scroll
 
-export let scroll = new scrolljs.Scroll()
+export let scroll = new PScroll.Scroll()
 
 for (let element of document.querySelectorAll('.wrapper-a .block')) {
 
@@ -29,7 +29,7 @@ scroll.on('update', event => {
 
 // display an SVG for debug
 
-let scrollSVG = new scrolljs.ScrollSVG({ scroll, scale: .5 })
+let scrollSVG = new PScroll.ScrollSVG({ scroll, scale: .5 })
 document.body.appendChild(scrollSVG.svg)
 
 
@@ -39,7 +39,7 @@ document.body.appendChild(scrollSVG.svg)
 
 // use an handler to detect some fundamental events (wheel max speed)
 
-export let scrollHandler = new scrolljs.ScrollHandler('.wrapper-a')
+export let scrollHandler = new PScroll.ScrollHandler('.wrapper-a')
 
 scrollHandler.on('wheel-increase-speed-y', event => {
 
