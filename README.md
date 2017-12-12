@@ -4,7 +4,7 @@ Physical Scroll
 
 a low-level Scroll based on a physic model (velocity, friction)
 
-Demo:[test-es5.html (es5 minified)](http://htmlpreview.github.io/?https://github.com/jniac/p-scroll/blob/master/test/test-es5.html) 
+Demo: [test-es5.html (es5 minified)](http://htmlpreview.github.io/?https://github.com/jniac/p-scroll/blob/master/test/test-es5.html) 
 
 basic usage:
 
