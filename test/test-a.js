@@ -47,7 +47,7 @@ scrollHandler.on('wheel-increase-speed-y', event => {
 
 })
 
-scrollHandler.on('wheel-max-speed-y', event => {
+scrollHandler.on('wheel-max-speed-y wheel-stop', event => {
 
 	scroll.shoot()
 
