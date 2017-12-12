@@ -32,6 +32,16 @@ let years = `
 
 })
 
+/* years[n] looks like: 
+
+{
+	year: Number,
+	stop: Number,
+	comment:
+}
+
+*/
+
 
 
 
@@ -96,12 +106,13 @@ function setDate(year) {
 
 
 
-//
+// set the scroll
 
 let scroll = new Scroll()
 
 years.forEach((date, i) => {
 
+	// change body color and update comment
 	scroll.stop(date.stop)
 		.toInterval({ offset: 1 })
 			.on('enter', event => {
@@ -120,12 +131,8 @@ years.forEach((date, i) => {
 				}, 200)
 
 			})
-			.on('exit', event => {
 
-				// console.log(event.target)
-
-			})
-
+	// interpolate years
 	if (i) {
 
 		let prev = years[i - 1]
