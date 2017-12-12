@@ -933,6 +933,20 @@ var PScroll = function (exports) {
 		}
 
 		_createClass(Scroll, [{
+			key: 'clear',
+			value: function clear() {
+
+				this.stops = [];
+				this.intervals = [];
+
+				this.position = 0;
+				this.velocity = 0;
+
+				this.createStop({ position: 0 });
+
+				this.dispatchEvent('clear');
+			}
+		}, {
 			key: 'update',
 			value: function update() {
 				var dt = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1 / 60;
@@ -1496,6 +1510,20 @@ var PScroll = function (exports) {
 
 				this.scroll = scroll;
 
+				this.scroll.on('clear', function (event) {
+
+					while (_this7.g.firstChild) {
+						_this7.g.firstChild.remove();
+					}_this7.draw();
+				});
+
+				this.draw();
+			}
+		}, {
+			key: 'draw',
+			value: function draw() {
+				var _this8 = this;
+
 				var s = this.options.scale;
 
 				this.line = svg('line', {
@@ -1528,8 +1556,8 @@ var PScroll = function (exports) {
 
 					svg(scrollPosition, {
 
-						x1: _this7.scroll.position * s,
-						x2: _this7.scroll.position * s
+						x1: _this8.scroll.position * s,
+						x2: _this8.scroll.position * s
 
 					});
 				});
@@ -1540,7 +1568,7 @@ var PScroll = function (exports) {
 
 					return svg('line', {
 
-						parent: _this7.g,
+						parent: _this8.g,
 
 						stroke: stop.color,
 
@@ -1597,7 +1625,7 @@ var PScroll = function (exports) {
 
 					var g = svg('g', {
 
-						parent: _this7.g,
+						parent: _this8.g,
 
 						stroke: interval.color
 

@@ -731,6 +731,20 @@ class Scroll extends EventDispatcher {
 	get velocity() { return this._velocity }
 	set velocity(value) { this._velocity_new = value; }
 
+	clear() {
+
+		this.stops = [];
+		this.intervals = [];
+
+		this.position = 0;
+		this.velocity = 0;
+
+		this.createStop({ position: 0 });
+
+		this.dispatchEvent('clear');
+
+	}
+
 	update(dt = 1 / 60) {
 
 		this._position_old = this._position_new;
@@ -1131,6 +1145,21 @@ class ScrollSVG {
 	init(scroll) {
 
 		this.scroll = scroll;
+
+		this.scroll.on('clear', event => {
+
+			while (this.g.firstChild)
+				this.g.firstChild.remove();
+
+			this.draw();
+
+		});
+
+		this.draw();
+
+	}
+
+	draw() {
 
 		let s = this.options.scale;
 
