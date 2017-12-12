@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Counter</title>
+	<link href="https://fonts.googleapis.com/css?family=Roboto+Mono:100,100i,300,300i,400,400i,500,500i,700,700i" rel="stylesheet">
+	<style type="text/css">
+		
+		html {
+			box-sizing: border-box;
+		}
+
+		*, *:before, *:after {
+			box-sizing: inherit;
+		}
+
+		body {
+			width: 100vw;
+			height: 100vh;
+			margin: 0;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			font-family: 'Roboto Mono', monospace;
+		}
+		
+		.counter {
+			display: flex;
+			height: 1em;
+			overflow: hidden;
+			font-size: 12em;
+			font-weight: 800;
+			line-height: 1em;
+		}
+
+		.comment {
+			width: 400px;
+			flex: 0 0 40px;
+			display: flex;
+			justify-content: center;
+			text-align: center;
+		}
+
+	</style>
+</head>
+<body>
+
+<div class="counter">
+	<div class="digit"></div>
+	<div class="digit"></div>
+	<div class="digit"></div>
+	<div class="digit"></div>
+</div>
+<div class="comment"></div>
+
+<script type="module">
+
+import * as main from './demo-counter.js'
+
+// expose variables globally
+Object.assign(window, main)
+
+</script>
+
+</body>
+</html>
