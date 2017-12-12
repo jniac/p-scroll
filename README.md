@@ -6,7 +6,7 @@ a scroll based on a physic model (velocity, friction)
 
 basic usage:
 
-```
+```javascript
 import { Scroll, ScrollHandler, ScrollSVG } from './build/p-scroll.module.js'
 
 let scroll = new Scroll()
