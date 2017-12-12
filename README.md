@@ -14,6 +14,7 @@ scrollB.friction = .0001 // .001
 
 // use a debug svg (to render the scroll timeline)
 let scrollSVG = new ScrollSVG({ scroll: scrollB, scale: .5 })
+scrollSVG.svg.style['z-index'] = 1000
 document.body.appendChild(scrollSVG.svg)
 
 let handler = new ScrollHandler('.a div.selector')
