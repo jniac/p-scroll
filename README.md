@@ -4,6 +4,18 @@ Physical Scroll
 
 a scroll based on a physic model (velocity, friction)
 
+```
+import { Scroll, ScrollHandler, ScrollSVG } from './build/p-scroll.module.js'
+
+let scroll = new Scroll()
+
+```
+
+
+
+
+## build
+
 to run ./build.sh **rollup** and **babel** must have been installed globally
 
 Demo:

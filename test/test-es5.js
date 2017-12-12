@@ -1433,13 +1433,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return ScrollSVG;
 	}();
 
-	var pScroll = Object.freeze({
+	var PScroll = Object.freeze({
 		Stop: Stop,
 		Interval: Interval,
 		Scroll: Scroll,
 		ScrollHandler: ScrollHandler,
 		ScrollSVG: ScrollSVG
 	});
+
+	// import { Scroll, ScrollHandler, ScrollSVG } from '../build/p-scroll.module.js'
+
 
 	// creating the scroll
 
@@ -1498,10 +1501,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	});
 
 	var testA = Object.freeze({
-		PScroll: pScroll,
 		scrollA: scrollA,
 		scrollAHandler: scrollAHandler
 	});
+
+	// import { Scroll, ScrollHandler, ScrollSVG } from '../build/p-scroll.module.js'
+
 
 	// creating the scroll
 
@@ -1563,10 +1568,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	});
 
 	var testB = Object.freeze({
-		PScroll: pScroll,
 		scrollB: scrollB,
 		scrollBHandler: scrollBHandler
 	});
 
-	Object.assign(window, testA, testB);
+	// exposing the local variables globally
+
+	Object.assign(window, testA, testB, PScroll);
 })();

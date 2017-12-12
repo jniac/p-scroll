@@ -1,5 +1,5 @@
-import * as PScroll from '../src/p-scroll.js'
-export { PScroll }
+import { Scroll, ScrollHandler, ScrollSVG } from '../src/p-scroll.js'
+// import { Scroll, ScrollHandler, ScrollSVG } from '../build/p-scroll.module.js'
 
 
 
@@ -9,7 +9,7 @@ export { PScroll }
 
 // creating the scroll
 
-export let scrollB = new PScroll.Scroll()
+export let scrollB = new Scroll()
 
 scrollB.friction = .000001
 
@@ -62,7 +62,7 @@ scrollB.shoot()
 
 // display an SVG for debug
 
-let scrollBSVG = new PScroll.ScrollSVG({ scroll: scrollB, scale: .5 })
+let scrollBSVG = new ScrollSVG({ scroll: scrollB, scale: .5 })
 scrollBSVG.svg.style.setProperty('top', '20px')
 document.body.appendChild(scrollBSVG.svg)
 
@@ -75,7 +75,7 @@ document.body.appendChild(scrollBSVG.svg)
 
 // use an handler to detect some fundamental events (wheel max speed)
 
-export let scrollBHandler = new PScroll.ScrollHandler('.wrapper-b')
+export let scrollBHandler = new ScrollHandler('.wrapper-b')
 
 scrollBHandler.on('wheel-increase-speed-y', event => {
 
