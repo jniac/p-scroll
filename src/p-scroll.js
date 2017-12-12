@@ -10,26 +10,32 @@ import { Variable } from './variable.js'
 
 class ScrollItem extends eventjs.EventDispatcher {
 
+	trigger(type) {
+
+		this.dispatchEvent(type)
+
+	}
+
 	update(state, local) {
 
 		let state_old = this.state_old = this.state
 		this.state = state
 
+		this.local_old = this.local
+		this.local = local
+
 		if (state !== state_old) {
 
 			if (state === 0 && state_old !== 0)
-				this.dispatchEvent('enter')
+				this.trigger('enter')
 
 			if (state !== 0 && state_old === 0)
-				this.dispatchEvent('exit')
+				this.trigger('exit')
 
 			if (state !== 0 && state_old !== 0) {
 
-				this.state = 0
-				this.dispatchEvent('touch')
-
-				this.state = state
-				this.dispatchEvent('leave')
+				this.trigger('touch')
+				this.trigger('leave')
 
 			}
 
@@ -133,6 +139,9 @@ export class Interval extends ScrollItem {
 
 		super.update(state, local)
 
+		if ((this.local >= 0 && this.local <= 1) || this.local_old >= 0 && this.local_old <= 1)
+			this.dispatchEvent('update')
+		
 	}
 
 	remove() {

@@ -707,25 +707,31 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}
 
 		_createClass(ScrollItem, [{
+			key: 'trigger',
+			value: function trigger(type) {
+
+				this.dispatchEvent(type);
+			}
+		}, {
 			key: 'update',
 			value: function update(state, local) {
 
 				var state_old = this.state_old = this.state;
 				this.state = state;
 
+				this.local_old = this.local;
+				this.local = local;
+
 				if (state !== state_old) {
 
-					if (state === 0 && state_old !== 0) this.dispatchEvent('enter');
+					if (state === 0 && state_old !== 0) this.trigger('enter');
 
-					if (state !== 0 && state_old === 0) this.dispatchEvent('exit');
+					if (state !== 0 && state_old === 0) this.trigger('exit');
 
 					if (state !== 0 && state_old !== 0) {
 
-						this.state = 0;
-						this.dispatchEvent('touch');
-
-						this.state = state;
-						this.dispatchEvent('leave');
+						this.trigger('touch');
+						this.trigger('leave');
 					}
 				}
 			}
@@ -840,6 +846,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var state = local < 0 ? -1 : local > 1 ? 1 : 0;
 
 				_get(Interval.prototype.__proto__ || Object.getPrototypeOf(Interval.prototype), 'update', this).call(this, state, local);
+
+				if (this.local >= 0 && this.local <= 1 || this.local_old >= 0 && this.local_old <= 1) this.dispatchEvent('update');
 			}
 		}, {
 			key: 'remove',
@@ -1528,6 +1536,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}).on('exit', function (event) {
 
 			element.classList.remove('enter');
+		}).on('update', function (event) {
+			console.log('update', event.target);
 		});
 
 		element.innerHTML = '<span>' + stop.position + '</span>';

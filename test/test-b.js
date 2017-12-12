@@ -34,6 +34,9 @@ Array.prototype.forEach.call(document.querySelectorAll('.wrapper-b .block'), ele
 			element.classList.remove('enter')
 
 		})
+		.on('update', event => {
+			console.log('update', event.target)
+		})
 
 	element.innerHTML = `<span>${stop.position}</span>`
 
