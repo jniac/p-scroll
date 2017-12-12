@@ -23,7 +23,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.wrapper-b .block'), ele
 
 
 
-	stop.toInterval({ offset: 50 })
+	stop.toInterval({ offset: 90 })
 		.on('enter', event => {
 
 			element.classList.add('enter')
@@ -35,7 +35,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.wrapper-b .block'), ele
 
 		})
 		.on('update', event => {
-			console.log('update', event.target)
+
 		})
 
 	element.innerHTML = `<span>${stop.position}</span>`
@@ -66,7 +66,7 @@ scrollB.shoot()
 // display an SVG for debug
 
 let scrollBSVG = new ScrollSVG({ scroll: scrollB, scale: .5 })
-scrollBSVG.svg.style.setProperty('top', '20px')
+scrollBSVG.svg.style.setProperty('top', '60px')
 document.body.appendChild(scrollBSVG.svg)
 
 

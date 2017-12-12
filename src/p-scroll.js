@@ -71,6 +71,8 @@ export class Stop extends ScrollItem {
 
 		stopCount++
 
+		this.update()
+
 	}
 
 	set(params) {
@@ -82,7 +84,9 @@ export class Stop extends ScrollItem {
 
 	}
 
-	update(position, position_old) {
+	update() {
+
+		let position = this.scroll.position
 
 		let local = position - this.position
 		let state = local < -this.margin ? -1 : local > this.margin ? 1 : 0
@@ -104,7 +108,7 @@ export class Stop extends ScrollItem {
 
 	}
 
-	toInterval({ offset, type = null }) {
+	toInterval({ offset, type = undefined }) {
 
 		return this.scroll.createInterval({ position: this.position - offset, width: offset * 2, type })
 
@@ -122,22 +126,26 @@ export class Stop extends ScrollItem {
 
 export class Interval extends ScrollItem {
 
-	constructor(scroll, stopA, stopB) {
+	constructor(scroll, stopMin, stopMax) {
 
 		super()
 
 		this.scroll = scroll
-		this.stopA = stopA
-		this.stopB = stopB
+		this.stopMin = stopMin
+		this.stopMax = stopMax
+
+		this.update()
 
 	}
 
-	update(position) {
+	update() {
 
-		let local = (position - this.stopA.position) / (this.stopB.position - this.stopA.position)
-		local = local < 0 ? 0 : local > 1 ? 1 : local
+		let position = this.scroll.position
 
+		let local = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position)
 		let state = local < 0 ? -1 : local > 1 ? 1 : 0
+		
+		local = local < 0 ? 0 : local > 1 ? 1 : local
 
 		super.update(state, local)
 
@@ -155,10 +163,22 @@ export class Interval extends ScrollItem {
 
 		scroll.intervals.splice(index, 1)
 
-		this.stopA.remove()
-		this.stopB.remove()
+		this.stopMin.remove()
+		this.stopMax.remove()
 
 		return this
+
+	}
+
+	overlap(other) {
+
+		return !(other.stopMin.position > this.stopMax.position || other.stopMax.position < this.stopMin.position)
+
+	}
+
+	toString() {
+
+		return `Interval[${this.stopMin.position}, ${this.stopMax.position}]`
 
 	}
 
@@ -220,10 +240,10 @@ export class Scroll extends eventjs.EventDispatcher {
 		this._velocity = this._velocity_new
 
 		for (let stop of this.stops)
-			stop.update(this._position, this._position_old)
+			stop.update()
 
 		for (let interval of this.intervals)
-			interval.update(this._position, this.position_old)
+			interval.update()
 
 		this.dispatchEvent('update')
 
@@ -335,9 +355,9 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	// shorthands:
 
-	interval({ from, to, position, width }) {
+	interval({ min, max, position, width }) {
 
-		if (!isNaN(from) && !isNaN(to)) {
+		if (!isNaN(min) && !isNaN(max)) {
 
 			this.createInterval()
 
@@ -378,11 +398,6 @@ function udpateScrolls() {
 }
 
 udpateScrolls()
-
-
-
-
-
 
 
 
@@ -516,10 +531,16 @@ function svg(node, attributes) {
 
 	}
 
-	for (let k in attributes)
-		node.setAttributeNS(null, k, attributes[k])
+	for (let k in attributes) 
+		attributes[k] !== null ? node.setAttributeNS(null, k, attributes[k]) : node.removeAttributeNS(null, k)
 
 	return node
+
+}
+
+function intervalPath(min, max, y, size) {
+	
+	return `M ${min} ${y} L ${max} ${y} M ${min} ${y - size} L ${min} ${y + size} M ${max} ${y - size} L ${max} ${y + size}`
 
 }
 
@@ -587,8 +608,8 @@ export class ScrollSVG {
 			x1: this.scroll.position * s,
 			x2: this.scroll.position * s,
 
-			y1: -4,
-			y2: 4,
+			y1: -5,
+			y2: 5,
 
 			'stroke-width': 3,
 
@@ -607,6 +628,8 @@ export class ScrollSVG {
 
 		this.stops = this.scroll.stops.map(stop => {
 
+			let size = stop.type === StopType.bound ? 5 : 1.5
+
 			return svg('line', {
 
 				parent: this.g,
@@ -614,10 +637,80 @@ export class ScrollSVG {
 				x1: stop.position * s,
 				x2: stop.position * s,
 
-				y1: -4,
-				y2: 4,
+				y1: -size,
+				y2: size,
 
 			})
+
+		})
+
+
+
+		let indexedIntervals = []
+
+		this.intervals = this.scroll.intervals.map(interval => {
+
+			let index = 0
+
+			for (let a; a = indexedIntervals[index]; index++) {
+				if (!a.overlap(interval))
+					break
+
+			}
+
+			indexedIntervals[index] = interval
+
+			let y = 20 + index * 12
+
+			let g = svg('g', {
+
+				parent: this.g,
+
+			})
+
+			let line = svg('line', {
+
+				parent: g,
+
+				x1: interval.stopMin.position * s,
+				x2: interval.stopMax.position * s,
+
+				y1: y,
+				y2: y,
+
+
+			})
+
+			let x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local
+
+			let pos = svg('line', {
+
+				parent: g,
+
+				x1: x * s,
+				x2: x * s,
+
+				y1: y - 5,
+				y2: y + 5,
+
+
+			})
+
+			interval.on(/enter|exit/, event => {
+
+				svg(g, { 'stroke-width': interval.state ? null : 3 })
+
+			})
+
+			interval.on('update', event => {
+
+				let x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local
+
+				svg(pos, { x1: x * s, x2: x * s })
+
+			})
+
+			return g
 
 		})
 
