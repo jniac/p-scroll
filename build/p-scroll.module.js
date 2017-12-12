@@ -633,13 +633,15 @@ class Interval extends ScrollItem {
 	update(position) {
 
 		let local = (position - this.stopA.position) / (this.stopB.position - this.stopA.position);
+		local = local < 0 ? 0 : local > 1 ? 1 : local;
+
 		let state = local < 0 ? -1 : local > 1 ? 1 : 0;
 
 		super.update(state, local);
 
 		if ((this.local >= 0 && this.local <= 1) || this.local_old >= 0 && this.local_old <= 1)
 			this.dispatchEvent('update');
-		
+
 	}
 
 	remove() {
@@ -831,6 +833,20 @@ class Scroll extends EventDispatcher {
 
 	// shorthands:
 
+	interval({ from, to, position, width }) {
+
+		if (!isNaN(from) && !isNaN(to)) {
+
+			this.createInterval();
+
+		}
+
+	}
+
+	/**
+	 * Get or create a stop
+	 * @param {number|string} position position
+	 */
 	stop(position, type = StopType.bound) {
 
 		if (typeof position === 'string' && position.slice(0, 2) === '+=')

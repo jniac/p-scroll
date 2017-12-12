@@ -843,6 +843,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			value: function update(position) {
 
 				var local = (position - this.stopA.position) / (this.stopB.position - this.stopA.position);
+				local = local < 0 ? 0 : local > 1 ? 1 : local;
+
 				var state = local < 0 ? -1 : local > 1 ? 1 : 0;
 
 				_get(Interval.prototype.__proto__ || Object.getPrototypeOf(Interval.prototype), 'update', this).call(this, state, local);
@@ -1152,6 +1154,26 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			}
 
 			// shorthands:
+
+		}, {
+			key: 'interval',
+			value: function interval(_ref6) {
+				var from = _ref6.from,
+				    to = _ref6.to,
+				    position = _ref6.position,
+				    width = _ref6.width;
+
+
+				if (!isNaN(from) && !isNaN(to)) {
+
+					this.createInterval();
+				}
+			}
+
+			/**
+    * Get or create a stop
+    * @param {number|string} position position
+    */
 
 		}, {
 			key: 'stop',
