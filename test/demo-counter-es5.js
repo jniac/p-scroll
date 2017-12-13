@@ -771,7 +771,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		function Stop(scroll, position) {
 			var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'bound';
-			var margin = arguments[3];
+			var margin = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : .1;
 			var name = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
 			var color = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
 
@@ -844,8 +844,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		_inherits(Interval, _ScrollItem2);
 
 		function Interval(scroll, stopMin, stopMax) {
-			var name = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
-			var color = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+			var margin = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : .1;
+			var name = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+			var color = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
 
 			_classCallCheck(this, Interval);
 
@@ -854,6 +855,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			_this4.scroll = scroll;
 			_this4.stopMin = stopMin;
 			_this4.stopMax = stopMax;
+			_this4.margin = margin;
 			_this4.color = color;
 			_this4.name = name || 'stop-' + stopCount;
 
@@ -869,10 +871,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var position = this.scroll._position;
 				var position_old = this.scroll._position_old;
 
-				var localRaw = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
-				var localRaw_old = (position_old - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
+				var width = this.stopMax.position - this.stopMin.position;
+
+				var localRaw = (position - this.stopMin.position) / width;
+				var localRaw_old = (position_old - this.stopMin.position) / width;
 				var local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw;
-				var state = localRaw < 0 ? -1 : localRaw > 1 ? 1 : 0;
+				var state = localRaw < -this.margin / width ? -1 : localRaw > 1 + this.margin / width ? 1 : 0;
 
 				_get(Interval.prototype.__proto__ || Object.getPrototypeOf(Interval.prototype), 'update', this).call(this, state, local);
 
@@ -1250,6 +1254,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				    max = _ref9.max,
 				    _ref9$stopType = _ref9.stopType,
 				    stopType = _ref9$stopType === undefined ? 'trigger' : _ref9$stopType,
+				    _ref9$margin = _ref9.margin,
+				    margin = _ref9$margin === undefined ? .1 : _ref9$margin,
 				    _ref9$color = _ref9.color,
 				    color = _ref9$color === undefined ? null : _ref9$color,
 				    _ref9$name = _ref9.name,
@@ -1262,7 +1268,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				stopMin = this.createStop({ position: min, type: stopType });
 				stopMax = this.createStop({ position: max, type: stopType });
 
-				var interval = new Interval(this, stopMin, stopMax, name, color);
+				var interval = new Interval(this, stopMin, stopMax, margin, name, color);
 
 				this.intervals.push(interval);
 

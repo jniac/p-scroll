@@ -570,7 +570,7 @@ class Stop extends ScrollItem {
 
 	static get Type() { return StopType }
 
-	constructor(scroll, position, type = 'bound', margin, name = null, color = null) {
+	constructor(scroll, position, type = 'bound', margin = .1, name = null, color = null) {
 
 		super();
 
@@ -639,13 +639,14 @@ class Stop extends ScrollItem {
 
 class Interval extends ScrollItem {
 
-	constructor(scroll, stopMin, stopMax, name = null, color = null) {
+	constructor(scroll, stopMin, stopMax, margin = .1, name = null, color = null) {
 
 		super();
 
 		this.scroll = scroll;
 		this.stopMin = stopMin;
 		this.stopMax = stopMax;
+		this.margin = margin;
 		this.color = color;
 		this.name = name || 'stop-' + stopCount;
 
@@ -660,10 +661,12 @@ class Interval extends ScrollItem {
 		let position = this.scroll._position;
 		let position_old = this.scroll._position_old;
 
-		let localRaw = (position - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
-		let localRaw_old = (position_old - this.stopMin.position) / (this.stopMax.position - this.stopMin.position);
+		let width = this.stopMax.position - this.stopMin.position;
+
+		let localRaw = (position - this.stopMin.position) / width;
+		let localRaw_old = (position_old - this.stopMin.position) / width;
 		let local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw;
-		let state = localRaw < 0 ? -1 : localRaw > 1 ? 1 : 0;
+		let state = localRaw < -this.margin / width ? -1 : localRaw > 1 + this.margin / width ? 1 : 0;
 		
 		super.update(state, local);
 
@@ -885,14 +888,14 @@ class Scroll extends EventDispatcher {
 
 	}
 
-	createInterval({ min, max, stopType = 'trigger', color = null, name = null }) {
+	createInterval({ min, max, stopType = 'trigger', margin = .1, color = null, name = null }) {
 
 		let stopMin, stopMax;
 
 		stopMin = this.createStop({ position: min, type: stopType });
 		stopMax = this.createStop({ position: max, type: stopType });
 
-		let interval = new Interval(this, stopMin, stopMax, name, color);
+		let interval = new Interval(this, stopMin, stopMax, margin, name, color);
 
 		this.intervals.push(interval);
 
