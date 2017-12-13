@@ -10,15 +10,15 @@ const mix = (a, b, ratio) => a + (b - a) * ratio
 
 let years = `
 
-1781 : Joseph Priestley creates water by igniting hydrogen and oxygen
-1800 : William Nicholson and Anthony Carlisle use electrolysis to separate water into hydrogen and oxygen
-1815 : William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton;
-1838 : Richard Laming hypothesized a subatomic particle carrying electric charge;
-1858 : Julius Plücker produced cathode rays;
-1874 : George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it;
-1886 : Eugene Goldstein produced anode rays;
-1897 : J. J. Thomson discovered the electron;
-1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium;
+1781 : Joseph Priestley creates water by igniting hydrogen and oxygen.
+1800 : William Nicholson and Anthony Carlisle use electrolysis to separate water into hydrogen and oxygen.
+1815 : William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton.
+1838 : Richard Laming hypothesized a subatomic particle carrying electric charge.
+1858 : Julius Plücker produced cathode rays.
+1874 : George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it.
+1886 : Eugene Goldstein produced anode rays.
+1897 : J. J. Thomson discovered the electron.
+1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium.
 1900 : Paul Villard discovered the gamma ray in uranium decay.
 
 `.trim().split('\n').map((str, index) => {

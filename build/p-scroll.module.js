@@ -997,7 +997,7 @@ udpateScrolls();
 
 const wheelDiscreteInterval = 120;
 
-function onMouseWheel(handler, event) {
+function onWheel(handler, event) {
 
 	event.preventDefault();
 
@@ -1080,7 +1080,7 @@ class ScrollHandler extends EventDispatcher {
 
 
 
-		element.addEventListener('mousewheel', event => onMouseWheel(this, event));
+		element.addEventListener('wheel', event => onWheel(this, event));
 
 	}
 
@@ -1165,6 +1165,8 @@ class ScrollSVG {
 		for (let k in svgCSS)
 			this.svg.style.setProperty(k, svgCSS[k]);
 
+		this.svg.style.setProperty('--color', this.options.color);
+
 		this.g = svg('g', {
 
 			parent: this.svg,
@@ -1174,6 +1176,28 @@ class ScrollSVG {
 			transform: 'translate(20, 20)'
 
 		});
+
+		this.tooltip = svg('g', {
+
+			parent: this.g,
+
+		});
+
+		svg('rect', {
+
+			parent: this.tooltip,
+
+			fill: 'var(--color)',
+			x: 0,
+			y: 0,
+			width: 200, 
+			height: 50,
+			rx: 8,
+			ry: 8,
+
+		});
+
+
 
 		if (this.options.scroll)
 			this.init(this.options.scroll);

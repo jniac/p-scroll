@@ -1404,7 +1404,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var wheelDiscreteInterval = 120;
 
-	function onMouseWheel(handler, event) {
+	function onWheel(handler, event) {
 
 		event.preventDefault();
 
@@ -1482,8 +1482,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			};
 
-			element.addEventListener('mousewheel', function (event) {
-				return onMouseWheel(_this6, event);
+			element.addEventListener('wheel', function (event) {
+				return onWheel(_this6, event);
 			});
 
 			return _this6;
@@ -1541,13 +1541,35 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			for (var k in svgCSS) {
 				this.svg.style.setProperty(k, svgCSS[k]);
-			}this.g = svg('g', {
+			}this.svg.style.setProperty('--color', this.options.color);
+
+			this.g = svg('g', {
 
 				parent: this.svg,
 
 				fill: 'none',
 				stroke: this.options.color,
 				transform: 'translate(20, 20)'
+
+			});
+
+			this.tooltip = svg('g', {
+
+				parent: this.g
+
+			});
+
+			svg('rect', {
+
+				parent: this.tooltip,
+
+				fill: 'var(--color)',
+				x: 0,
+				y: 0,
+				width: 200,
+				height: 50,
+				rx: 8,
+				ry: 8
 
 			});
 
@@ -1746,7 +1768,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return a + (b - a) * ratio;
 	};
 
-	var years = '\n\n1781 : Joseph Priestley creates water by igniting hydrogen and oxygen\n1800 : William Nicholson and Anthony Carlisle use electrolysis to separate water into hydrogen and oxygen\n1815 : William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton;\n1838 : Richard Laming hypothesized a subatomic particle carrying electric charge;\n1858 : Julius Pl\xFCcker produced cathode rays;\n1874 : George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it;\n1886 : Eugene Goldstein produced anode rays;\n1897 : J. J. Thomson discovered the electron;\n1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium;\n1900 : Paul Villard discovered the gamma ray in uranium decay.\n\n'.trim().split('\n').map(function (str, index) {
+	var years = '\n\n1781 : Joseph Priestley creates water by igniting hydrogen and oxygen.\n1800 : William Nicholson and Anthony Carlisle use electrolysis to separate water into hydrogen and oxygen.\n1815 : William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton.\n1838 : Richard Laming hypothesized a subatomic particle carrying electric charge.\n1858 : Julius Pl\xFCcker produced cathode rays.\n1874 : George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it.\n1886 : Eugene Goldstein produced anode rays.\n1897 : J. J. Thomson discovered the electron.\n1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium.\n1900 : Paul Villard discovered the gamma ray in uranium decay.\n\n'.trim().split('\n').map(function (str, index) {
 		var _str$split = str.split(' : '),
 		    _str$split2 = _slicedToArray(_str$split, 2),
 		    year = _str$split2[0],
