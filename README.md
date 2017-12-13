@@ -2,7 +2,7 @@
 
 Physical Scroll
 
-a low-level Scroll based on a physic model (velocity, friction)
+a low-level, event based Scroll, built on a physic model (velocity, friction)
 
 **Demo (es5, minified):**
 
@@ -58,8 +58,10 @@ handler.on('wheel-increase-speed-y', event => {
 })
 
 handler.on('wheel-max-speed-y wheel-stop', event => {
-
-	scroll.shoot() // scroll will automatically scroll to the most suitable stop (depending on velocity & available stops)
+	
+	// scroll will automatically scroll to the most suitable stop 
+	// (depending on velocity & available stops)
+	scroll.shoot()
 
 })
 
