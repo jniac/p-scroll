@@ -10,6 +10,14 @@ import { Variable } from './variable.js'
 
 class ScrollItem extends eventjs.EventDispatcher {
 
+	constructor() {
+
+		super()
+
+		this.state = 1
+
+	}
+
 	trigger(type) {
 
 		this.dispatchEvent(type)
@@ -26,14 +34,14 @@ class ScrollItem extends eventjs.EventDispatcher {
 
 		if (state !== state_old) {
 
+			if ((state <= 0 && state_old > 0) || (state >= 0 && state_old < 0))
+				this.trigger('touch')
+
 			if (state === 0 && (state_old !== 0))
 				this.trigger('enter')
 
 			if (state !== 0 && state_old === 0)
 				this.trigger('exit')
-
-			if ((state <= 0 && state_old > 0) || (state >= 0 && state_old < 0))
-				this.trigger('touch')
 
 			if ((state < 0 && state_old >= 0) || (state > 0 && state_old <= 0))
 				this.trigger('leave')
@@ -217,6 +225,8 @@ export class Scroll extends eventjs.EventDispatcher {
 
 		this.friction = 1e-3
 
+		this.frame = 0
+
 		this.stops = []
 		this.intervals = []
 
@@ -284,6 +294,8 @@ export class Scroll extends eventjs.EventDispatcher {
 			interval.update()
 
 		this.dispatchEvent('update')
+
+		this.frame++
 
 		return this
 

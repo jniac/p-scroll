@@ -21,15 +21,15 @@ let years = `
 1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium;
 1900 : Paul Villard discovered the gamma ray in uranium decay.
 
-`.trim().split('\n').map((str, i) => {
+`.trim().split('\n').map((str, index) => {
 
 	let [year, comment] = str.split(' : ')
 
 	year = parseFloat(year)
 
-	stop = year - 1781 + i * 4
+	stop = year - 1781 + index * 4
 
-	return { year, comment, stop }
+	return { year, comment, stop, index }
 
 })
 
@@ -132,11 +132,14 @@ years.forEach((date, i) => {
 				}, 200)
 
 			})
-			.on('leave', event => {
+			// .on(/./, event => {
 
-				console.log('leave')
+			// 	if (event.type === 'update')
+			// 		console.log(`${date.index}`, event.type)
+			// 	else
+			// 		console.log(`${date.index} - ${scroll.frame}`, event.type)
 
-			})
+			// })
 
 	// interpolate years
 	if (i) {

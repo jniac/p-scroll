@@ -515,6 +515,14 @@ class Variable extends Value {
 
 class ScrollItem extends EventDispatcher {
 
+	constructor() {
+
+		super();
+
+		this.state = 1;
+
+	}
+
 	trigger(type) {
 
 		this.dispatchEvent(type);
@@ -531,14 +539,14 @@ class ScrollItem extends EventDispatcher {
 
 		if (state !== state_old) {
 
+			if ((state <= 0 && state_old > 0) || (state >= 0 && state_old < 0))
+				this.trigger('touch');
+
 			if (state === 0 && (state_old !== 0))
 				this.trigger('enter');
 
 			if (state !== 0 && state_old === 0)
 				this.trigger('exit');
-
-			if ((state <= 0 && state_old > 0) || (state >= 0 && state_old < 0))
-				this.trigger('touch');
 
 			if ((state < 0 && state_old >= 0) || (state > 0 && state_old <= 0))
 				this.trigger('leave');
@@ -720,6 +728,8 @@ class Scroll extends EventDispatcher {
 
 		this.friction = 1e-3;
 
+		this.frame = 0;
+
 		this.stops = [];
 		this.intervals = [];
 
@@ -787,6 +797,8 @@ class Scroll extends EventDispatcher {
 			interval.update();
 
 		this.dispatchEvent('update');
+
+		this.frame++;
 
 		return this
 

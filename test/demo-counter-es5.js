@@ -711,7 +711,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function ScrollItem() {
 			_classCallCheck(this, ScrollItem);
 
-			return _possibleConstructorReturn(this, (ScrollItem.__proto__ || Object.getPrototypeOf(ScrollItem)).apply(this, arguments));
+			var _this2 = _possibleConstructorReturn(this, (ScrollItem.__proto__ || Object.getPrototypeOf(ScrollItem)).call(this));
+
+			_this2.state = 1;
+
+			return _this2;
 		}
 
 		_createClass(ScrollItem, [{
@@ -732,11 +736,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				if (state !== state_old) {
 
+					if (state <= 0 && state_old > 0 || state >= 0 && state_old < 0) this.trigger('touch');
+
 					if (state === 0 && state_old !== 0) this.trigger('enter');
 
 					if (state !== 0 && state_old === 0) this.trigger('exit');
-
-					if (state <= 0 && state_old > 0 || state >= 0 && state_old < 0) this.trigger('touch');
 
 					if (state < 0 && state_old >= 0 || state > 0 && state_old <= 0) this.trigger('leave');
 				}
@@ -932,6 +936,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			_this5.friction = 1e-3;
 
+			_this5.frame = 0;
+
 			_this5.stops = [];
 			_this5.intervals = [];
 
@@ -1048,6 +1054,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				}
 
 				this.dispatchEvent('update');
+
+				this.frame++;
 
 				return this;
 			}
@@ -1732,7 +1740,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return a + (b - a) * ratio;
 	};
 
-	var years = '\n\n1781 : Joseph Priestley creates water by igniting hydrogen and oxygen\n1800 : William Nicholson and Anthony Carlisle use electrolysis to separate water into hydrogen and oxygen\n1815 : William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton;\n1838 : Richard Laming hypothesized a subatomic particle carrying electric charge;\n1858 : Julius Pl\xFCcker produced cathode rays;\n1874 : George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it;\n1886 : Eugene Goldstein produced anode rays;\n1897 : J. J. Thomson discovered the electron;\n1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium;\n1900 : Paul Villard discovered the gamma ray in uranium decay.\n\n'.trim().split('\n').map(function (str, i) {
+	var years = '\n\n1781 : Joseph Priestley creates water by igniting hydrogen and oxygen\n1800 : William Nicholson and Anthony Carlisle use electrolysis to separate water into hydrogen and oxygen\n1815 : William Prout hypothesizes that all matter is built up from hydrogen, adumbrating the proton;\n1838 : Richard Laming hypothesized a subatomic particle carrying electric charge;\n1858 : Julius Pl\xFCcker produced cathode rays;\n1874 : George Johnstone Stoney hypothesizes a minimum unit of electric charge. In 1891, he coins the word electron for it;\n1886 : Eugene Goldstein produced anode rays;\n1897 : J. J. Thomson discovered the electron;\n1899 : Ernest Rutherford discovered the alpha and beta particles emitted by uranium;\n1900 : Paul Villard discovered the gamma ray in uranium decay.\n\n'.trim().split('\n').map(function (str, index) {
 		var _str$split = str.split(' : '),
 		    _str$split2 = _slicedToArray(_str$split, 2),
 		    year = _str$split2[0],
@@ -1740,9 +1748,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		year = parseFloat(year);
 
-		stop = year - 1781 + i * 4;
+		stop = year - 1781 + index * 4;
 
-		return { year: year, comment: comment, stop: stop };
+		return { year: year, comment: comment, stop: stop, index: index };
 	});
 
 	/* years[n] looks like: 
@@ -1832,10 +1840,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				comment.innerHTML = date.comment;
 				comment.classList.remove('hidden');
 			}, 200);
-		}).on('leave', function (event) {
-
-			console.log('leave');
 		});
+		// .on(/./, event => {
+
+		// 	if (event.type === 'update')
+		// 		console.log(`${date.index}`, event.type)
+		// 	else
+		// 		console.log(`${date.index} - ${scroll.frame}`, event.type)
+
+		// })
 
 		// interpolate years
 		if (i) {

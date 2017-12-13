@@ -709,7 +709,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		function ScrollItem() {
 			_classCallCheck(this, ScrollItem);
 
-			return _possibleConstructorReturn(this, (ScrollItem.__proto__ || Object.getPrototypeOf(ScrollItem)).apply(this, arguments));
+			var _this2 = _possibleConstructorReturn(this, (ScrollItem.__proto__ || Object.getPrototypeOf(ScrollItem)).call(this));
+
+			_this2.state = 1;
+
+			return _this2;
 		}
 
 		_createClass(ScrollItem, [{
@@ -730,11 +734,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				if (state !== state_old) {
 
+					if (state <= 0 && state_old > 0 || state >= 0 && state_old < 0) this.trigger('touch');
+
 					if (state === 0 && state_old !== 0) this.trigger('enter');
 
 					if (state !== 0 && state_old === 0) this.trigger('exit');
-
-					if (state <= 0 && state_old > 0 || state >= 0 && state_old < 0) this.trigger('touch');
 
 					if (state < 0 && state_old >= 0 || state > 0 && state_old <= 0) this.trigger('leave');
 				}
@@ -930,6 +934,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			_this5.friction = 1e-3;
 
+			_this5.frame = 0;
+
 			_this5.stops = [];
 			_this5.intervals = [];
 
@@ -1046,6 +1052,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				}
 
 				this.dispatchEvent('update');
+
+				this.frame++;
 
 				return this;
 			}
