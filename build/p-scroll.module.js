@@ -537,12 +537,11 @@ class ScrollItem extends EventDispatcher {
 			if (state !== 0 && state_old === 0)
 				this.trigger('exit');
 
-			if (state !== 0 && state_old !== 0) {
-
+			if ((state <= 0 && state_old > 0) || (state >= 0 && state_old < 0))
 				this.trigger('touch');
-				this.trigger('leave');
 
-			}
+			if ((state < 0 && state_old >= 0) || (state > 0 && state_old <= 0))
+				this.trigger('leave');
 
 		}
 

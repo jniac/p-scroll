@@ -1,6 +1,7 @@
 import { Scroll, ScrollHandler, ScrollSVG } from '../src/p-scroll.js'
 
 
+
 const coef = (n, min, max, clamp = true) => (clamp && n < min) ? 0 : (clamp && n > max) ? 1 : (n - min) / (max - min)
 
 const mix = (a, b, ratio) => a + (b - a) * ratio
@@ -129,6 +130,11 @@ years.forEach((date, i) => {
 					comment.classList.remove('hidden')
 
 				}, 200)
+
+			})
+			.on('leave', event => {
+
+				console.log('leave')
 
 			})
 

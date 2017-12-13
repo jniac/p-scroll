@@ -736,11 +736,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					if (state !== 0 && state_old === 0) this.trigger('exit');
 
-					if (state !== 0 && state_old !== 0) {
+					if (state <= 0 && state_old > 0 || state >= 0 && state_old < 0) this.trigger('touch');
 
-						this.trigger('touch');
-						this.trigger('leave');
-					}
+					if (state < 0 && state_old >= 0 || state > 0 && state_old <= 0) this.trigger('leave');
 				}
 			}
 		}]);
@@ -1747,6 +1745,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return { year: year, comment: comment, stop: stop };
 	});
 
+	/* years[n] looks like: 
+ 
+ {
+ 	year: Number,
+ 	stop: Number,
+ 	comment:
+ }
+ 
+ */
+
 	// init digits
 
 	var _iteratorNormalCompletion18 = true;
@@ -1804,12 +1812,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		});
 	}
 
-	//
+	// set the scroll
 
 	var scroll$1 = new Scroll();
 
 	years.forEach(function (date, i) {
 
+		// change body color and update comment
 		scroll$1.stop(date.stop).toInterval({ offset: 1 }).on('enter', function (event) {
 
 			document.body.style['background-color'] = 'hsl(' + (360 * Math.random()).toFixed(0) + ',50%,80%)';
@@ -1823,12 +1832,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				comment.innerHTML = date.comment;
 				comment.classList.remove('hidden');
 			}, 200);
-		}).on('exit', function (event) {
+		}).on('leave', function (event) {
 
-			// console.log(event.target)
-
+			console.log('leave');
 		});
 
+		// interpolate years
 		if (i) {
 
 			var prev = years[i - 1];
