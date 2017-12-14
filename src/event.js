@@ -146,8 +146,8 @@ export function clearEventListener(target) {
 
 export function dispatchEvent(target, event, eventOptions = null) {
 
-	if (!target)
-		return null
+	if (!target || !event)
+		return target
 
 	if (isIterable(target)) {
 
@@ -157,6 +157,10 @@ export function dispatchEvent(target, event, eventOptions = null) {
 		return target
 
 	}
+
+	// fast skip test (x20 speed on target with no listeners: 0.0030ms to 0.00015ms)
+	if (!weakmap.has(target) && !event.propagateTo && (!eventOptions || !eventOptions.propagateTo))
+		return target
 
 	if (typeof event === 'string') {
 

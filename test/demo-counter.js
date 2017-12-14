@@ -115,7 +115,7 @@ years.forEach((date, i) => {
 
 	// change body color and update comment
 	scroll.stop(date.stop)
-		.toInterval({ offset: 1 })
+		.toInterval({ offset: 3, tags: 'year' })
 			.on('enter', event => {
 
 				document.body.style['background-color'] = `hsl(${(360 * Math.random()).toFixed(0)},50%,80%)`
@@ -176,7 +176,9 @@ handler.on('wheel-increase-speed-y', event => {
 
 handler.on('wheel-max-speed-y wheel-stop', event => {
 
-	scroll.shoot() // scroll will automatically scroll to the most suitable stop (depending on velocity & available stops)
+	// scroll will automatically scroll to the most suitable stop 
+	// (depending on velocity & available stops)
+	scroll.shoot()
 
 })
 

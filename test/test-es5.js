@@ -284,7 +284,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		var eventOptions = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
 
-		if (!target) return null;
+		if (!target || !event) return target;
 
 		if (isIterable(target)) {
 			var _iteratorNormalCompletion7 = true;
@@ -315,6 +315,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			return target;
 		}
+
+		// fast skip test (x20 speed on target with no listeners: 0.0030ms to 0.00015ms)
+		if (!weakmap.has(target) && !event.propagateTo && (!eventOptions || !eventOptions.propagateTo)) return target;
 
 		if (typeof event === 'string') {
 
@@ -703,13 +706,140 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return Variable;
 	}(Value);
 
-	var ScrollItem = function (_EventDispatcher) {
-		_inherits(ScrollItem, _EventDispatcher);
+	var Tags = function () {
+		function Tags() {
+			_classCallCheck(this, Tags);
 
-		function ScrollItem() {
-			_classCallCheck(this, ScrollItem);
+			this.string = '';
+		}
 
-			var _this2 = _possibleConstructorReturn(this, (ScrollItem.__proto__ || Object.getPrototypeOf(ScrollItem)).call(this));
+		_createClass(Tags, [{
+			key: 'add',
+			value: function add(tags) {
+
+				var a = !this.string ? [] : this.string.split(' ');
+
+				var _iteratorNormalCompletion10 = true;
+				var _didIteratorError10 = false;
+				var _iteratorError10 = undefined;
+
+				try {
+					for (var _iterator10 = tags.split(' ')[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
+						var tag = _step10.value;
+
+						if (!a.includes(tag)) a.push(tag);
+					}
+				} catch (err) {
+					_didIteratorError10 = true;
+					_iteratorError10 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion10 && _iterator10.return) {
+							_iterator10.return();
+						}
+					} finally {
+						if (_didIteratorError10) {
+							throw _iteratorError10;
+						}
+					}
+				}
+
+				this.string = a.join(' ');
+
+				return this;
+			}
+		}, {
+			key: 'matches',
+			value: function matches(selector) {
+
+				var a = this.string.split(' ');
+
+				return selector.split(' ').every(function (tag) {
+					return a.includes(tag);
+				});
+			}
+		}, {
+			key: 'valueOf',
+			value: function valueOf() {
+
+				return this.string;
+			}
+		}]);
+
+		return Tags;
+	}();
+
+	function triggerItem(item, type) {
+
+		item.hasTrigger = true;
+
+		item.dispatchEvent(type);
+	}
+
+	function updateItem(item, state, local) {
+		var triggerUpdate = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
+
+		item.hasTrigger = false;
+
+		var state_old = item.state_old = item.state;
+		item.state = state;
+
+		item.local_old = item.local;
+		item.local = local;
+
+		if (state !== state_old) {
+
+			if (state <= 0 && state_old > 0 || state >= 0 && state_old < 0) triggerItem(item, 'touch');
+
+			if (state === 0 && state_old !== 0) triggerItem(item, 'enter');
+
+			if (state !== 0 && state_old === 0) triggerItem(item, 'exit');
+
+			if (state < 0 && state_old >= 0 || state > 0 && state_old <= 0) triggerItem(item, 'leave');
+		}
+
+		if (item.hasTrigger || triggerUpdate) item.dispatchEvent('update');
+	}
+
+	function updateStop(scroll, stop) {
+
+		var position = scroll._position;
+
+		var local = position - stop.position;
+		var state = local < -stop.margin ? -1 : local > stop.margin ? 1 : 0;
+
+		updateItem(stop, state, local);
+	}
+
+	function updateInterval(scroll, interval) {
+
+		var position = scroll._position;
+		var position_old = scroll._position_old;
+
+		var min = interval.stopMin.position;
+		var max = interval.stopMax.position;
+		var width = max - min;
+
+		var localRaw = (position - min) / width;
+		var localRaw_old = (position_old - min) / width;
+		var local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw;
+		var state = localRaw < -interval.margin / width ? -1 : localRaw > 1 + interval.margin / width ? 1 : 0;
+
+		var triggerUpdate = localRaw >= 0 && localRaw <= 1 || localRaw_old >= 0 && localRaw_old <= 1;
+
+		updateItem(interval, state, local, triggerUpdate);
+	}
+
+	var Item = function (_EventDispatcher) {
+		_inherits(Item, _EventDispatcher);
+
+		function Item() {
+			_classCallCheck(this, Item);
+
+			var _this2 = _possibleConstructorReturn(this, (Item.__proto__ || Object.getPrototypeOf(Item)).call(this));
+
+			_this2.tags = new Tags();
 
 			_this2.state = 1;
 
@@ -718,7 +848,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			return _this2;
 		}
 
-		_createClass(ScrollItem, [{
+		_createClass(Item, [{
+			key: 'set',
+			value: function set(params) {
+
+				for (var k in params) {
+					this[k] = params[k];
+				}return this;
+			}
+		}, {
 			key: 'trigger',
 			value: function trigger(type) {
 
@@ -726,36 +864,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				this.dispatchEvent(type);
 			}
-		}, {
-			key: 'update',
-			value: function update(state, local) {
-				var triggerUpdate = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-
-
-				this.hasTrigger = false;
-
-				var state_old = this.state_old = this.state;
-				this.state = state;
-
-				this.local_old = this.local;
-				this.local = local;
-
-				if (state !== state_old) {
-
-					if (state <= 0 && state_old > 0 || state >= 0 && state_old < 0) this.trigger('touch');
-
-					if (state === 0 && state_old !== 0) this.trigger('enter');
-
-					if (state !== 0 && state_old === 0) this.trigger('exit');
-
-					if (state < 0 && state_old >= 0 || state > 0 && state_old <= 0) this.trigger('leave');
-				}
-
-				if (this.hasTrigger || triggerUpdate) this.dispatchEvent('update');
-			}
 		}]);
 
-		return ScrollItem;
+		return Item;
 	}(EventDispatcher);
 
 	var StopType = {
@@ -767,8 +878,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var stopCount = 0;
 
-	var Stop = function (_ScrollItem) {
-		_inherits(Stop, _ScrollItem);
+	var Stop = function (_Item) {
+		_inherits(Stop, _Item);
 
 		_createClass(Stop, null, [{
 			key: 'Type',
@@ -782,6 +893,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			var margin = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : .1;
 			var name = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
 			var color = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
+			var tags = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : '';
 
 			_classCallCheck(this, Stop);
 
@@ -796,32 +908,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			_this3.margin = margin;
 			_this3.name = name || _this3.id;
 			_this3.color = color;
-
-			// this.update()
+			_this3.tags.add(tags);
 
 			return _this3;
 		}
 
 		_createClass(Stop, [{
-			key: 'set',
-			value: function set(params) {
-
-				for (var k in params) {
-					this[k] = params[k];
-				}return this;
-			}
-		}, {
-			key: 'update',
-			value: function update() {
-
-				var position = this.scroll._position;
-
-				var local = position - this.position;
-				var state = local < -this.margin ? -1 : local > this.margin ? 1 : 0;
-
-				_get(Stop.prototype.__proto__ || Object.getPrototypeOf(Stop.prototype), 'update', this).call(this, state, local);
-			}
-		}, {
 			key: 'remove',
 			value: function remove() {
 
@@ -837,26 +929,29 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			key: 'toInterval',
 			value: function toInterval(_ref) {
 				var offset = _ref.offset,
-				    _ref$type = _ref.type,
-				    type = _ref$type === undefined ? undefined : _ref$type;
+				    _ref$tags = _ref.tags,
+				    tags = _ref$tags === undefined ? '' : _ref$tags,
+				    _ref$stopType = _ref.stopType,
+				    stopType = _ref$stopType === undefined ? undefined : _ref$stopType;
 
 
-				return this.scroll.interval({ position: this.position, offset: offset, type: type });
+				return this.scroll.interval({ position: this.position, offset: offset, stopType: stopType, tags: tags });
 			}
 		}]);
 
 		return Stop;
-	}(ScrollItem);
+	}(Item);
 
 	var intervalCount = 0;
 
-	var Interval = function (_ScrollItem2) {
-		_inherits(Interval, _ScrollItem2);
+	var Interval = function (_Item2) {
+		_inherits(Interval, _Item2);
 
 		function Interval(scroll, stopMin, stopMax) {
 			var margin = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : .1;
 			var name = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
 			var color = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
+			var tags = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : '';
 
 			_classCallCheck(this, Interval);
 
@@ -867,34 +962,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			_this4.scroll = scroll;
 			_this4.stopMin = stopMin;
 			_this4.stopMax = stopMax;
-			_this4.margin = margin;
+			_this4.margin = margin * 0;
 			_this4.color = color;
 			_this4.name = name || _this4.id;
-
-			// this.update()
+			_this4.tags.add(tags);
 
 			return _this4;
 		}
 
 		_createClass(Interval, [{
-			key: 'update',
-			value: function update() {
-
-				var position = this.scroll._position;
-				var position_old = this.scroll._position_old;
-
-				var width = this.stopMax.position - this.stopMin.position;
-
-				var localRaw = (position - this.stopMin.position) / width;
-				var localRaw_old = (position_old - this.stopMin.position) / width;
-				var local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw;
-				var state = localRaw < -this.margin / width ? -1 : localRaw > 1 + this.margin / width ? 1 : 0;
-
-				var triggerUpdate = localRaw >= 0 && localRaw <= 1 || localRaw_old >= 0 && localRaw_old <= 1;
-
-				_get(Interval.prototype.__proto__ || Object.getPrototypeOf(Interval.prototype), 'update', this).call(this, state, local, triggerUpdate);
-			}
-		}, {
 			key: 'remove',
 			value: function remove() {
 
@@ -908,6 +984,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				this.stopMax.remove();
 
 				return this;
+			}
+		}, {
+			key: 'contains',
+			value: function contains(position) {
+
+				return this.stopMin.position <= position && this.stopMax.position >= position;
 			}
 		}, {
 			key: 'overlap',
@@ -939,7 +1021,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}]);
 
 		return Interval;
-	}(ScrollItem);
+	}(Item);
 
 	var scrolls = [];
 
@@ -1034,40 +1116,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				this._position = this._position_new;
 				this._velocity = this._velocity_new;
 
-				var _iteratorNormalCompletion10 = true;
-				var _didIteratorError10 = false;
-				var _iteratorError10 = undefined;
-
-				try {
-					for (var _iterator10 = this.stops[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
-						var stop = _step10.value;
-
-						stop.update();
-					}
-				} catch (err) {
-					_didIteratorError10 = true;
-					_iteratorError10 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion10 && _iterator10.return) {
-							_iterator10.return();
-						}
-					} finally {
-						if (_didIteratorError10) {
-							throw _iteratorError10;
-						}
-					}
-				}
-
 				var _iteratorNormalCompletion11 = true;
 				var _didIteratorError11 = false;
 				var _iteratorError11 = undefined;
 
 				try {
-					for (var _iterator11 = this.intervals[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
-						var interval = _step11.value;
+					for (var _iterator11 = this.stops[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
+						var stop = _step11.value;
 
-						interval.update();
+						updateStop(scroll, stop);
 					}
 				} catch (err) {
 					_didIteratorError11 = true;
@@ -1080,6 +1137,31 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					} finally {
 						if (_didIteratorError11) {
 							throw _iteratorError11;
+						}
+					}
+				}
+
+				var _iteratorNormalCompletion12 = true;
+				var _didIteratorError12 = false;
+				var _iteratorError12 = undefined;
+
+				try {
+					for (var _iterator12 = this.intervals[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
+						var interval = _step12.value;
+
+						updateInterval(scroll, interval);
+					}
+				} catch (err) {
+					_didIteratorError12 = true;
+					_iteratorError12 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion12 && _iterator12.return) {
+							_iterator12.return();
+						}
+					} finally {
+						if (_didIteratorError12) {
+							throw _iteratorError12;
 						}
 					}
 				}
@@ -1099,47 +1181,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}, {
 			key: 'stopByName',
 			value: function stopByName(name) {
-				var _iteratorNormalCompletion12 = true;
-				var _didIteratorError12 = false;
-				var _iteratorError12 = undefined;
-
-				try {
-
-					for (var _iterator12 = this.stops[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
-						var stop = _step12.value;
-
-						if (stop.name === name) return stop;
-					}
-				} catch (err) {
-					_didIteratorError12 = true;
-					_iteratorError12 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion12 && _iterator12.return) {
-							_iterator12.return();
-						}
-					} finally {
-						if (_didIteratorError12) {
-							throw _iteratorError12;
-						}
-					}
-				}
-
-				return null;
-			}
-		}, {
-			key: 'getIntervalById',
-			value: function getIntervalById(id) {
 				var _iteratorNormalCompletion13 = true;
 				var _didIteratorError13 = false;
 				var _iteratorError13 = undefined;
 
 				try {
 
-					for (var _iterator13 = this.intervals[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
-						var interval = _step13.value;
+					for (var _iterator13 = this.stops[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
+						var stop = _step13.value;
 
-						if (interval.id === id) return interval;
+						if (stop.name === name) return stop;
 					}
 				} catch (err) {
 					_didIteratorError13 = true;
@@ -1302,12 +1353,33 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				return null;
 			}
 		}, {
+			key: 'getIntervals',
+			value: function getIntervals(_ref8) {
+				var position = _ref8.position,
+				    _ref8$selector = _ref8.selector,
+				    selector = _ref8$selector === undefined ? null : _ref8$selector;
+
+
+				var a = this.intervals.filter(function (interval) {
+					return interval.contains(position);
+				});
+
+				if (selector) return a.filter(function (interval) {
+					return interval.tags.matches(selector);
+				});
+
+				return a;
+			}
+		}, {
 			key: 'getInterval',
-			value: function getInterval(_ref8) {
-				var min = _ref8.min,
-				    max = _ref8.max,
-				    _ref8$tolerance = _ref8.tolerance,
-				    tolerance = _ref8$tolerance === undefined ? 1e-9 : _ref8$tolerance;
+			value: function getInterval(args) {
+
+				return this.getIntervals(args)[0];
+			}
+		}, {
+			key: 'intervalByMinMax',
+			value: function intervalByMinMax(min, max) {
+				var tolerance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1e-9;
 				var _iteratorNormalCompletion17 = true;
 				var _didIteratorError17 = false;
 				var _iteratorError17 = undefined;
@@ -1348,7 +1420,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				    _ref9$color = _ref9.color,
 				    color = _ref9$color === undefined ? null : _ref9$color,
 				    _ref9$name = _ref9.name,
-				    name = _ref9$name === undefined ? null : _ref9$name;
+				    name = _ref9$name === undefined ? null : _ref9$name,
+				    _ref9$tags = _ref9.tags,
+				    tags = _ref9$tags === undefined ? '' : _ref9$tags;
 
 
 				var stopMin = void 0,
@@ -1357,7 +1431,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				stopMin = this.createStop({ position: min, type: stopType });
 				stopMax = this.createStop({ position: max, type: stopType });
 
-				var interval = new Interval(this, stopMin, stopMax, margin, name, color);
+				var interval = new Interval(this, stopMin, stopMax, margin, name, color, tags);
 
 				this.intervals.push(interval);
 
@@ -1388,7 +1462,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				    _ref10$stopType = _ref10.stopType,
 				    stopType = _ref10$stopType === undefined ? 'trigger' : _ref10$stopType,
 				    _ref10$color = _ref10.color,
-				    color = _ref10$color === undefined ? null : _ref10$color;
+				    color = _ref10$color === undefined ? null : _ref10$color,
+				    _ref10$tags = _ref10.tags,
+				    tags = _ref10$tags === undefined ? '' : _ref10$tags;
 
 
 				if (!isNaN(position) && !isNaN(width)) {
@@ -1410,7 +1486,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				min += -offset;
 				max += offset;
 
-				var interval = this.getInterval({ min: min, max: max }) || this.createInterval({ min: min, max: max, stopType: stopType, color: color });
+				var interval = this.intervalByMinMax(min, max) || this.createInterval({ min: min, max: max, stopType: stopType, color: color, tags: tags });
 
 				return interval;
 			}
@@ -1668,6 +1744,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		left: 0,
 		width: '100%',
 		'z-index': 100,
+		'font-family': 'monospace',
 		'font-size': 10
 
 	};
@@ -2064,6 +2141,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	}();
 
 	var PScroll = Object.freeze({
+		Tags: Tags,
 		Stop: Stop,
 		Interval: Interval,
 		Scroll: Scroll,

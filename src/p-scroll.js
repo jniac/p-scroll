@@ -6,17 +6,134 @@ import { Variable } from './variable.js'
 
 
 
+export class Tags {
 
+	constructor() {
 
-class ScrollItem extends eventjs.EventDispatcher {
+		this.string = ''
+
+	}
+
+	add(tags) {
+
+		let a = !this.string ? [] : this.string.split(' ')
+
+		for (let tag of tags.split(' '))
+			if (!a.includes(tag))
+				a.push(tag)
+
+		this.string = a.join(' ')
+
+		return this
+
+	}
+
+	matches(selector) {
+
+		let a = this.string.split(' ')
+
+		return selector.split(' ').every(tag => a.includes(tag))
+
+	}
+
+	valueOf() {
+
+		return this.string
+
+	}
+
+}
+
+function triggerItem(item, type) {
+
+	item.hasTrigger = true
+
+	item.dispatchEvent(type)
+
+}
+
+function updateItem(item, state, local, triggerUpdate = false) {
+
+	item.hasTrigger = false
+
+	let state_old = item.state_old = item.state
+	item.state = state
+
+	item.local_old = item.local
+	item.local = local
+
+	if (state !== state_old) {
+
+		if ((state <= 0 && state_old > 0) || (state >= 0 && state_old < 0))
+			triggerItem(item, 'touch')
+
+		if (state === 0 && (state_old !== 0))
+			triggerItem(item, 'enter')
+
+		if (state !== 0 && state_old === 0)
+			triggerItem(item, 'exit')
+
+		if ((state < 0 && state_old >= 0) || (state > 0 && state_old <= 0))
+			triggerItem(item, 'leave')
+
+	}
+
+	if (item.hasTrigger || triggerUpdate)
+		item.dispatchEvent('update')
+
+}
+
+function updateStop(scroll, stop) {
+
+	let position = scroll._position
+
+	let local = position - stop.position
+	let state = local < -stop.margin ? -1 : local > stop.margin ? 1 : 0
+
+	updateItem(stop, state, local)
+
+}
+
+function updateInterval(scroll, interval) {
+
+	let position = scroll._position
+	let position_old = scroll._position_old
+
+	let min = interval.stopMin.position
+	let max = interval.stopMax.position
+	let width = max - min
+
+	let localRaw = (position - min) / width
+	let localRaw_old = (position_old - min) / width
+	let local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw
+	let state = localRaw < -interval.margin / width ? -1 : localRaw > 1 + interval.margin / width ? 1 : 0
+
+	let triggerUpdate = (localRaw >= 0 && localRaw <= 1) || (localRaw_old >= 0 && localRaw_old <= 1)
+	
+	updateItem(interval, state, local, triggerUpdate)
+
+}
+
+class Item extends eventjs.EventDispatcher {
 
 	constructor() {
 
 		super()
 
+		this.tags = new Tags()
+
 		this.state = 1
 
 		this.hasTrigger = false
+
+	}
+
+	set(params) {
+
+		for (let k in params)
+			this[k] = params[k]
+
+		return this
 
 	}
 
@@ -25,37 +142,6 @@ class ScrollItem extends eventjs.EventDispatcher {
 		this.hasTrigger = true
 
 		this.dispatchEvent(type)
-
-	}
-
-	update(state, local, triggerUpdate = false) {
-
-		this.hasTrigger = false
-
-		let state_old = this.state_old = this.state
-		this.state = state
-
-		this.local_old = this.local
-		this.local = local
-
-		if (state !== state_old) {
-
-			if ((state <= 0 && state_old > 0) || (state >= 0 && state_old < 0))
-				this.trigger('touch')
-
-			if (state === 0 && (state_old !== 0))
-				this.trigger('enter')
-
-			if (state !== 0 && state_old === 0)
-				this.trigger('exit')
-
-			if ((state < 0 && state_old >= 0) || (state > 0 && state_old <= 0))
-				this.trigger('leave')
-
-		}
-
-		if (this.hasTrigger || triggerUpdate)
-			this.dispatchEvent('update')
 
 	}
 
@@ -70,11 +156,11 @@ const StopType = {
 
 let stopCount = 0
 
-export class Stop extends ScrollItem {
+export class Stop extends Item {
 
 	static get Type() { return StopType }
 
-	constructor(scroll, position, type = 'bound', margin = .1, name = null, color = null) {
+	constructor(scroll, position, type = 'bound', margin = .1, name = null, color = null, tags = '') {
 
 		super()
 
@@ -87,28 +173,7 @@ export class Stop extends ScrollItem {
 		this.margin = margin
 		this.name = name || this.id
 		this.color = color
-
-		// this.update()
-
-	}
-
-	set(params) {
-
-		for (let k in params)
-			this[k] = params[k]
-
-		return this
-
-	}
-
-	update() {
-
-		let position = this.scroll._position
-
-		let local = position - this.position
-		let state = local < -this.margin ? -1 : local > this.margin ? 1 : 0
-
-		super.update(state, local)
+		this.tags.add(tags)
 
 	}
 
@@ -125,9 +190,9 @@ export class Stop extends ScrollItem {
 
 	}
 
-	toInterval({ offset, type = undefined }) {
+	toInterval({ offset, tags = '', stopType = undefined }) {
 
-		return this.scroll.interval({ position: this.position, offset, type })
+		return this.scroll.interval({ position: this.position, offset, stopType, tags })
 
 	}
 
@@ -143,9 +208,9 @@ export class Stop extends ScrollItem {
 
 let intervalCount = 0
 
-export class Interval extends ScrollItem {
+export class Interval extends Item {
 
-	constructor(scroll, stopMin, stopMax, margin = .1, name = null, color = null) {
+	constructor(scroll, stopMin, stopMax, margin = .1, name = null, color = null, tags = '') {
 
 		super()
 
@@ -154,35 +219,16 @@ export class Interval extends ScrollItem {
 		this.scroll = scroll
 		this.stopMin = stopMin
 		this.stopMax = stopMax
-		this.margin = margin
+		this.margin = margin * 0
 		this.color = color
 		this.name = name || this.id
-
-		// this.update()
+		this.tags.add(tags)
 
 	}
 
 	get min() { return this.stopMin.position }
 	get max() { return this.stopMax.position }
 	get width() { return this.stopMax.position - this.stopMin.position }
-
-	update() {
-
-		let position = this.scroll._position
-		let position_old = this.scroll._position_old
-
-		let width = this.stopMax.position - this.stopMin.position
-
-		let localRaw = (position - this.stopMin.position) / width
-		let localRaw_old = (position_old - this.stopMin.position) / width
-		let local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw
-		let state = localRaw < -this.margin / width ? -1 : localRaw > 1 + this.margin / width ? 1 : 0
-
-		let triggerUpdate = (localRaw >= 0 && localRaw <= 1) || (localRaw_old >= 0 && localRaw_old <= 1)
-		
-		super.update(state, local, triggerUpdate)
-
-	}
 
 	remove() {
 
@@ -197,6 +243,12 @@ export class Interval extends ScrollItem {
 		this.stopMax.remove()
 
 		return this
+
+	}
+
+	contains(position) {
+
+		return this.stopMin.position <= position && this.stopMax.position >= position
 
 	}
 
@@ -303,10 +355,10 @@ export class Scroll extends eventjs.EventDispatcher {
 		this._velocity = this._velocity_new
 
 		for (let stop of this.stops)
-			stop.update()
+			updateStop(scroll, stop)
 
 		for (let interval of this.intervals)
-			interval.update()
+			updateInterval(scroll, interval)
 
 		this.dispatchEvent('update')
 
@@ -327,16 +379,6 @@ export class Scroll extends eventjs.EventDispatcher {
 		for (let stop of this.stops)
 			if (stop.name === name)
 				return stop
-
-		return null
-
-	}
-
-	getIntervalById(id) {
-
-		for (let interval of this.intervals)
-			if (interval.id === id)
-				return interval
 
 		return null
 
@@ -407,7 +449,24 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	}
 
-	getInterval({ min, max, tolerance = 1e-9 }) {
+	getIntervals({ position, selector = null }) {
+
+		let a = this.intervals.filter(interval => interval.contains(position))
+
+		if (selector)
+			return a.filter(interval => interval.tags.matches(selector))
+
+		return a
+
+	}
+
+	getInterval(args) {
+
+		return this.getIntervals(args)[0]
+
+	}
+
+	intervalByMinMax(min, max, tolerance = 1e-9) {
 
 		for (let interval of this.intervals)
 			if (Math.abs(interval.min - min) < tolerance && Math.abs(interval.max - max) < tolerance)
@@ -417,14 +476,14 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	}
 
-	createInterval({ min, max, stopType = 'trigger', margin = .1, color = null, name = null }) {
+	createInterval({ min, max, stopType = 'trigger', margin = .1, color = null, name = null, tags = '' }) {
 
 		let stopMin, stopMax
 
 		stopMin = this.createStop({ position: min, type: stopType })
 		stopMax = this.createStop({ position: max, type: stopType })
 
-		let interval = new Interval(this, stopMin, stopMax, margin, name, color)
+		let interval = new Interval(this, stopMin, stopMax, margin, name, color, tags)
 
 		this.intervals.push(interval)
 
@@ -450,7 +509,7 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	// shorthands:
 
-	interval({ min, max, position, width, offset = 0, stopType = 'trigger', color = null }) {
+	interval({ min, max, position, width, offset = 0, stopType = 'trigger', color = null, tags = '' }) {
 
 		if (!isNaN(position) && !isNaN(width))
 			[min, max] = [position, position + width]
@@ -468,7 +527,7 @@ export class Scroll extends eventjs.EventDispatcher {
 		min += -offset
 		max += offset
 
-		let interval = this.getInterval({ min, max }) || this.createInterval({ min, max, stopType, color })
+		let interval = this.intervalByMinMax(min, max) || this.createInterval({ min, max, stopType, color, tags })
 
 		return interval
 
@@ -722,6 +781,7 @@ let svgCSS = {
 	left: 0,
 	width: '100%',
 	'z-index': 100,
+	'font-family': 'monospace',
 	'font-size': 10,
 
 }

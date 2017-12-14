@@ -62,9 +62,16 @@
 <script type="module">
 
 import * as main from './demo-counter.js'
+import * as pscroll from '../src/p-scroll.js'
+import * as eventjs from '../src/event.js'
 
 // expose variables globally
-Object.assign(window, main)
+Object.assign(window, main, {
+
+	pscroll,
+	eventjs,
+
+})
 
 </script>
 
