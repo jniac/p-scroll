@@ -754,6 +754,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			key: 'matches',
 			value: function matches(selector) {
 
+				if (selector instanceof RegExp) return selector.test(this.string);
+
 				var a = this.string.split(' ');
 
 				return selector.split(' ').every(function (tag) {
@@ -1359,8 +1361,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			value: function getIntervals(_ref8) {
 				var _ref8$position = _ref8.position,
 				    position = _ref8$position === undefined ? NaN : _ref8$position,
-				    _ref8$selector = _ref8.selector,
-				    selector = _ref8$selector === undefined ? null : _ref8$selector;
+				    _ref8$tags = _ref8.tags,
+				    tags = _ref8$tags === undefined ? null : _ref8$tags;
 
 
 				var a = this.intervals;
@@ -1369,8 +1371,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					return interval.contains(position);
 				});
 
-				if (selector) a = a.filter(function (interval) {
-					return interval.tags.matches(selector);
+				if (tags) a = a.filter(function (interval) {
+					return interval.tags.matches(tags);
 				});
 
 				return a;
@@ -2241,7 +2243,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	years.forEach(function (date, i) {
 
 		// change body color and update comment
-		scroll$1.stop(date.stop).toInterval({ offset: 3, tags: 'year' }).on('enter', function (event) {
+		scroll$1.stop(date.stop).toInterval({ offset: 3, tags: 'year year-' + i }).on('enter', function (event) {
 
 			document.body.style['background-color'] = 'hsl(' + (360 * Math.random()).toFixed(0) + ',50%,80%)';
 

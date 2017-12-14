@@ -115,7 +115,7 @@ years.forEach((date, i) => {
 
 	// change body color and update comment
 	scroll.stop(date.stop)
-		.toInterval({ offset: 3, tags: 'year' })
+		.toInterval({ offset: 3, tags: `year year-${i}` })
 			.on('enter', event => {
 
 				document.body.style['background-color'] = `hsl(${(360 * Math.random()).toFixed(0)},50%,80%)`

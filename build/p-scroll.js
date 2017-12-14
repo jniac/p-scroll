@@ -752,6 +752,8 @@ var PScroll = function (exports) {
 			key: 'matches',
 			value: function matches(selector) {
 
+				if (selector instanceof RegExp) return selector.test(this.string);
+
 				var a = this.string.split(' ');
 
 				return selector.split(' ').every(function (tag) {
@@ -1357,8 +1359,8 @@ var PScroll = function (exports) {
 			value: function getIntervals(_ref8) {
 				var _ref8$position = _ref8.position,
 				    position = _ref8$position === undefined ? NaN : _ref8$position,
-				    _ref8$selector = _ref8.selector,
-				    selector = _ref8$selector === undefined ? null : _ref8$selector;
+				    _ref8$tags = _ref8.tags,
+				    tags = _ref8$tags === undefined ? null : _ref8$tags;
 
 
 				var a = this.intervals;
@@ -1367,8 +1369,8 @@ var PScroll = function (exports) {
 					return interval.contains(position);
 				});
 
-				if (selector) a = a.filter(function (interval) {
-					return interval.tags.matches(selector);
+				if (tags) a = a.filter(function (interval) {
+					return interval.tags.matches(tags);
 				});
 
 				return a;

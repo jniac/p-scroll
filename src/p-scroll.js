@@ -30,6 +30,9 @@ export class Tags {
 
 	matches(selector) {
 
+		if (selector instanceof RegExp)
+			return selector.test(this.string)
+
 		let a = this.string.split(' ')
 
 		return selector.split(' ').every(tag => a.includes(tag))
@@ -449,15 +452,15 @@ export class Scroll extends eventjs.EventDispatcher {
 
 	}
 
-	getIntervals({ position = NaN, selector = null }) {
+	getIntervals({ position = NaN, tags = null }) {
 
 		let a = this.intervals
 
 		if (!isNaN(position))
 			a = a.filter(interval => interval.contains(position))
 
-		if (selector)
-			a = a.filter(interval => interval.tags.matches(selector))
+		if (tags)
+			a = a.filter(interval => interval.tags.matches(tags))
 
 		return a
 
