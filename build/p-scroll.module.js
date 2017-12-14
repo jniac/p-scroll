@@ -574,15 +574,15 @@ class Stop extends ScrollItem {
 
 		super();
 
+		this.id = stopCount++;
+
 		this.scroll = scroll;
 
 		this.position = position;
 		this.type = type;
 		this.margin = margin;
-		this.name = name || 'stop-' + stopCount;
+		this.name = name || 'stop-' + this.id;
 		this.color = color;
-
-		stopCount++;
 
 		// this.update()
 
@@ -637,24 +637,30 @@ class Stop extends ScrollItem {
 
 
 
+let intervalCount = 0;
+
 class Interval extends ScrollItem {
 
 	constructor(scroll, stopMin, stopMax, margin = .1, name = null, color = null) {
 
 		super();
 
+		this.id = intervalCount++;
+
 		this.scroll = scroll;
 		this.stopMin = stopMin;
 		this.stopMax = stopMax;
 		this.margin = margin;
 		this.color = color;
-		this.name = name || 'stop-' + stopCount;
-
-		
+		this.name = name || 'interval-' + this.id;
 
 		// this.update()
 
 	}
+
+	get min() { return this.stopMin.position }
+	get max() { return this.stopMax.position }
+	get width() { return this.stopMax.position - this.stopMin.position }
 
 	update() {
 
@@ -881,7 +887,7 @@ class Scroll extends EventDispatcher {
 	getInterval({ min, max, tolerance = 1e-9 }) {
 
 		for (let interval of this.intervals)
-			if (Math.abs(interval.stopMin.position - min) < tolerance && Math.abs(interval.stopMax.position - max) < tolerance)
+			if (Math.abs(interval.min - min) < tolerance && Math.abs(interval.max - max) < tolerance)
 				return interval
 
 		return null
@@ -1139,6 +1145,36 @@ function svg(node, attributes) {
 
 }
 
+function svgRetrieveAttributes(node) {
+
+	let result = {};
+
+	for (let k of node.getAttributeNames()) {
+
+		let value = node.getAttributeNS(null, k);
+
+		result[k] = /\d$/.test(value) && !isNaN(value) ? parseFloat(value) : value;
+	}
+
+	return result
+
+}
+
+function closest(element, selector) {
+
+	while (element instanceof Element) {
+
+		if (element.matches(selector))
+			return element
+
+		element = element.parentNode;
+
+	}
+
+	return null
+
+}
+
 let svgCSS = {
 
 	position: 'fixed',
@@ -1146,8 +1182,121 @@ let svgCSS = {
 	left: 0,
 	width: '100%',
 	'z-index': 100,
+	'font-size': 10,
 
 };
+
+class Tooltip {
+
+	constructor(scrollSVG) {
+
+		this.scrollSVG = scrollSVG;
+
+		this.g = svg('g', {
+
+			parent: scrollSVG.g,
+			class: 'tooltip',
+
+			visibility: 'hidden',
+
+		});
+
+		svg('rect', {
+
+			parent: this.g,
+
+			fill: 'var(--color)',
+			x: 0,
+			y: 0,
+			width: 160, 
+			height: 50,
+			rx: 5,
+			ry: 5,
+
+		});
+
+		this.name = svg('text', {
+
+			parent: this.g,
+
+			fill: 'white',
+			stroke: 'none',
+			x: 80,
+			y: 14,
+			'text-anchor': 'middle',
+
+		});
+
+		this.range = svg('text', {
+
+			parent: this.g,
+
+			fill: 'white',
+			stroke: 'none',
+			x: 80,
+			y: 28,
+			'text-anchor': 'middle',
+
+		});
+
+		this.info = svg('text', {
+
+			parent: this.g,
+
+			fill: 'white',
+			stroke: 'none',
+			x: 80,
+			y: 42,
+			'text-anchor': 'middle',
+
+		});
+
+		this.scrollSVG.g.addEventListener('mouseover', event => {
+
+			if (closest(event.target, 'g.tooltip'))
+				return
+
+			let interval = closest(event.target, 'g.interval');
+
+			this.setTarget(interval);
+
+		});
+
+		this.scrollSVG.svg.addEventListener('mouseleave', event => this.setTarget(null));
+	}
+
+	setTarget(value) {
+
+		if (this.target === value)
+			return
+
+		this.target = value;
+
+		svg(this.g, { visibility: this.target ? 'visible' : 'hidden' });
+
+		if (!this.target)
+			return
+
+		let interval = this.scrollSVG.scroll.intervals.find(v => v.id === parseFloat(this.target.dataset.id));
+
+		this.name.innerHTML = interval.name;
+		this.range.innerHTML = interval.min.toFixed(1) + ' - ' + interval.max.toFixed(1);
+		this.info.innerHTML = `local: ${interval.local.toFixed(1)}, state: ${interval.state}`;
+
+		let attr = svgRetrieveAttributes(this.target.querySelector('line'));
+
+		let x = (attr.x1 + attr.x2) / 2 - 80;
+		let y = (attr.y1 + attr.y2) / 2 + 8;
+
+		svg(this.g, {
+
+			transform: `translate(${x}, ${y})`,
+
+		});
+
+	}
+
+}
 
 class ScrollSVG {
 
@@ -1177,25 +1326,8 @@ class ScrollSVG {
 
 		});
 
-		this.tooltip = svg('g', {
+		this.tooltip = new Tooltip(this);
 
-			parent: this.g,
-
-		});
-
-		svg('rect', {
-
-			parent: this.tooltip,
-
-			fill: 'var(--color)',
-			x: 0,
-			y: 0,
-			width: 200, 
-			height: 50,
-			rx: 8,
-			ry: 8,
-
-		});
 
 
 
@@ -1310,18 +1442,21 @@ class ScrollSVG {
 
 				parent: this.g,
 
+				class: 'interval',
+				'data-id': interval.id, 
+
 				stroke: interval.color,
 
 			});
 
-			g.dataset.interval = interval.stopMin.position + ',' + interval.stopMax.position;
+			g.dataset.interval = interval.min + ',' + interval.max;
 
 			let line = svg('line', {
 
 				parent: g,
 
-				x1: interval.stopMin.position * s,
-				x2: interval.stopMax.position * s,
+				x1: interval.min * s,
+				x2: interval.max * s,
 
 				y1: y,
 				y2: y,
@@ -1330,7 +1465,7 @@ class ScrollSVG {
 			});
 
 			// (interval.local || 0) : avoid initialization bug (interval.local === NaN)
-			let x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * (interval.local || 0);
+			let x = interval.min + interval.width * (interval.local || 0);
 
 			x = (x * s).toFixed(2);
 
@@ -1347,6 +1482,20 @@ class ScrollSVG {
 
 			});
 
+			let hitArea = svg('rect', {
+
+				parent: g,
+
+				stroke: 'none',
+				fill: 'transparent',
+
+				x: interval.min * s,
+				y: y - 5,
+				width: interval.width * s,
+				height: 10,
+
+			});
+
 			interval.on(/enter|exit/, event => {
 
 				svg(g, { 'stroke-width': interval.state ? null : 3 });
@@ -1355,7 +1504,7 @@ class ScrollSVG {
 
 			interval.on('update', event => {
 
-				let x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local;
+				let x = interval.min + interval.width * interval.local;
 
 				x = (x * s).toFixed(2);
 

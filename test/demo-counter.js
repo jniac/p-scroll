@@ -191,4 +191,15 @@ document.body.appendChild(scrollSVG.svg)
 
 
 
+
+
+// expose variables globally
+Object.assign(window, {
+
+	scroll,
+
+})
+
+
+
 	

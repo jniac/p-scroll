@@ -777,15 +777,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			var _this3 = _possibleConstructorReturn(this, (Stop.__proto__ || Object.getPrototypeOf(Stop)).call(this));
 
+			_this3.id = stopCount++;
+
 			_this3.scroll = scroll;
 
 			_this3.position = position;
 			_this3.type = type;
 			_this3.margin = margin;
-			_this3.name = name || 'stop-' + stopCount;
+			_this3.name = name || 'stop-' + _this3.id;
 			_this3.color = color;
-
-			stopCount++;
 
 			// this.update()
 
@@ -838,6 +838,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		return Stop;
 	}(ScrollItem);
 
+	var intervalCount = 0;
+
 	var Interval = function (_ScrollItem2) {
 		_inherits(Interval, _ScrollItem2);
 
@@ -850,12 +852,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			var _this4 = _possibleConstructorReturn(this, (Interval.__proto__ || Object.getPrototypeOf(Interval)).call(this));
 
+			_this4.id = intervalCount++;
+
 			_this4.scroll = scroll;
 			_this4.stopMin = stopMin;
 			_this4.stopMax = stopMax;
 			_this4.margin = margin;
 			_this4.color = color;
-			_this4.name = name || 'stop-' + stopCount;
+			_this4.name = name || 'interval-' + _this4.id;
 
 			// this.update()
 
@@ -906,6 +910,21 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			value: function toString() {
 
 				return 'Interval[' + this.stopMin.position + ', ' + this.stopMax.position + ']';
+			}
+		}, {
+			key: 'min',
+			get: function get() {
+				return this.stopMin.position;
+			}
+		}, {
+			key: 'max',
+			get: function get() {
+				return this.stopMax.position;
+			}
+		}, {
+			key: 'width',
+			get: function get() {
+				return this.stopMax.position - this.stopMin.position;
 			}
 		}]);
 
@@ -1226,7 +1245,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					for (var _iterator15 = this.intervals[Symbol.iterator](), _step15; !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
 						var interval = _step15.value;
 
-						if (Math.abs(interval.stopMin.position - min) < tolerance && Math.abs(interval.stopMax.position - max) < tolerance) return interval;
+						if (Math.abs(interval.min - min) < tolerance && Math.abs(interval.max - max) < tolerance) return interval;
 					}
 				} catch (err) {
 					_didIteratorError15 = true;
@@ -1514,15 +1533,181 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}return node;
 	}
 
+	function svgRetrieveAttributes(node) {
+
+		var result = {};
+
+		var _iteratorNormalCompletion17 = true;
+		var _didIteratorError17 = false;
+		var _iteratorError17 = undefined;
+
+		try {
+			for (var _iterator17 = node.getAttributeNames()[Symbol.iterator](), _step17; !(_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done); _iteratorNormalCompletion17 = true) {
+				var k = _step17.value;
+
+
+				var value = node.getAttributeNS(null, k);
+
+				result[k] = /\d$/.test(value) && !isNaN(value) ? parseFloat(value) : value;
+			}
+		} catch (err) {
+			_didIteratorError17 = true;
+			_iteratorError17 = err;
+		} finally {
+			try {
+				if (!_iteratorNormalCompletion17 && _iterator17.return) {
+					_iterator17.return();
+				}
+			} finally {
+				if (_didIteratorError17) {
+					throw _iteratorError17;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	function closest(element, selector) {
+
+		while (element instanceof Element) {
+
+			if (element.matches(selector)) return element;
+
+			element = element.parentNode;
+		}
+
+		return null;
+	}
+
 	var svgCSS = {
 
 		position: 'fixed',
 		top: 0,
 		left: 0,
 		width: '100%',
-		'z-index': 100
+		'z-index': 100,
+		'font-size': 10
 
 	};
+
+	var Tooltip = function () {
+		function Tooltip(scrollSVG) {
+			var _this7 = this;
+
+			_classCallCheck(this, Tooltip);
+
+			this.scrollSVG = scrollSVG;
+
+			this.g = svg('g', {
+
+				parent: scrollSVG.g,
+				class: 'tooltip',
+
+				visibility: 'hidden'
+
+			});
+
+			svg('rect', {
+
+				parent: this.g,
+
+				fill: 'var(--color)',
+				x: 0,
+				y: 0,
+				width: 160,
+				height: 50,
+				rx: 5,
+				ry: 5
+
+			});
+
+			this.name = svg('text', {
+
+				parent: this.g,
+
+				fill: 'white',
+				stroke: 'none',
+				x: 80,
+				y: 14,
+				'text-anchor': 'middle'
+
+			});
+
+			this.range = svg('text', {
+
+				parent: this.g,
+
+				fill: 'white',
+				stroke: 'none',
+				x: 80,
+				y: 28,
+				'text-anchor': 'middle'
+
+			});
+
+			this.info = svg('text', {
+
+				parent: this.g,
+
+				fill: 'white',
+				stroke: 'none',
+				x: 80,
+				y: 42,
+				'text-anchor': 'middle'
+
+			});
+
+			this.scrollSVG.g.addEventListener('mouseover', function (event) {
+
+				if (closest(event.target, 'g.tooltip')) return;
+
+				var interval = closest(event.target, 'g.interval');
+
+				_this7.setTarget(interval);
+			});
+
+			this.scrollSVG.svg.addEventListener('mouseleave', function (event) {
+				return _this7.setTarget(null);
+			});
+		}
+
+		_createClass(Tooltip, [{
+			key: 'setTarget',
+			value: function setTarget(value) {
+				var _this8 = this;
+
+				if (this.target === value) return;
+
+				this.target = value;
+
+				svg(this.g, { visibility: this.target ? 'visible' : 'hidden' });
+
+				if (!this.target) return;
+
+				var interval = this.scrollSVG.scroll.intervals.find(function (v) {
+					return v.id === parseFloat(_this8.target.dataset.id);
+				});
+
+				this.name.innerHTML = interval.name;
+				this.range.innerHTML = interval.min.toFixed(1) + ' - ' + interval.max.toFixed(1);
+				this.info.innerHTML = 'local: ' + interval.local.toFixed(1) + ', state: ' + interval.state;
+
+				var attr = svgRetrieveAttributes(this.target.querySelector('line'));
+
+				var x = (attr.x1 + attr.x2) / 2 - 80;
+				var y = (attr.y1 + attr.y2) / 2 + 8;
+
+				svg(this.g, {
+
+					transform: 'translate(' + x + ', ' + y + ')'
+
+				});
+			}
+		}]);
+
+		return Tooltip;
+	}();
 
 	var ScrollSVG = function () {
 		function ScrollSVG(options) {
@@ -1551,25 +1736,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			});
 
-			this.tooltip = svg('g', {
-
-				parent: this.g
-
-			});
-
-			svg('rect', {
-
-				parent: this.tooltip,
-
-				fill: 'var(--color)',
-				x: 0,
-				y: 0,
-				width: 200,
-				height: 50,
-				rx: 8,
-				ry: 8
-
-			});
+			this.tooltip = new Tooltip(this);
 
 			if (this.options.scroll) this.init(this.options.scroll);
 		}
@@ -1577,15 +1744,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		_createClass(ScrollSVG, [{
 			key: 'init',
 			value: function init(scroll) {
-				var _this7 = this;
+				var _this9 = this;
 
 				this.scroll = scroll;
 
 				this.scroll.on('clear', function (event) {
 
-					while (_this7.g.firstChild) {
-						_this7.g.firstChild.remove();
-					}_this7.draw();
+					while (_this9.g.firstChild) {
+						_this9.g.firstChild.remove();
+					}_this9.draw();
 				});
 
 				this.draw();
@@ -1593,7 +1760,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}, {
 			key: 'draw',
 			value: function draw() {
-				var _this8 = this;
+				var _this10 = this;
 
 				var s = this.options.scale;
 
@@ -1627,8 +1794,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					svg(scrollPosition, {
 
-						x1: _this8.scroll.position * s,
-						x2: _this8.scroll.position * s
+						x1: _this10.scroll.position * s,
+						x2: _this10.scroll.position * s
 
 					});
 				});
@@ -1639,7 +1806,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					return svg('line', {
 
-						parent: _this8.g,
+						parent: _this10.g,
 
 						stroke: stop.color,
 
@@ -1662,27 +1829,27 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 						var overlap = false;
 
-						var _iteratorNormalCompletion17 = true;
-						var _didIteratorError17 = false;
-						var _iteratorError17 = undefined;
+						var _iteratorNormalCompletion18 = true;
+						var _didIteratorError18 = false;
+						var _iteratorError18 = undefined;
 
 						try {
-							for (var _iterator17 = a[Symbol.iterator](), _step17; !(_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done); _iteratorNormalCompletion17 = true) {
-								var b = _step17.value;
+							for (var _iterator18 = a[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
+								var b = _step18.value;
 
 								overlap = overlap || b.overlap(interval);
 							}
 						} catch (err) {
-							_didIteratorError17 = true;
-							_iteratorError17 = err;
+							_didIteratorError18 = true;
+							_iteratorError18 = err;
 						} finally {
 							try {
-								if (!_iteratorNormalCompletion17 && _iterator17.return) {
-									_iterator17.return();
+								if (!_iteratorNormalCompletion18 && _iterator18.return) {
+									_iterator18.return();
 								}
 							} finally {
-								if (_didIteratorError17) {
-									throw _iteratorError17;
+								if (_didIteratorError18) {
+									throw _iteratorError18;
 								}
 							}
 						}
@@ -1696,20 +1863,23 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					var g = svg('g', {
 
-						parent: _this8.g,
+						parent: _this10.g,
+
+						class: 'interval',
+						'data-id': interval.id,
 
 						stroke: interval.color
 
 					});
 
-					g.dataset.interval = interval.stopMin.position + ',' + interval.stopMax.position;
+					g.dataset.interval = interval.min + ',' + interval.max;
 
 					var line = svg('line', {
 
 						parent: g,
 
-						x1: interval.stopMin.position * s,
-						x2: interval.stopMax.position * s,
+						x1: interval.min * s,
+						x2: interval.max * s,
 
 						y1: y,
 						y2: y
@@ -1717,7 +1887,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					});
 
 					// (interval.local || 0) : avoid initialization bug (interval.local === NaN)
-					var x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * (interval.local || 0);
+					var x = interval.min + interval.width * (interval.local || 0);
 
 					x = (x * s).toFixed(2);
 
@@ -1733,6 +1903,20 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					});
 
+					var hitArea = svg('rect', {
+
+						parent: g,
+
+						stroke: 'none',
+						fill: 'transparent',
+
+						x: interval.min * s,
+						y: y - 5,
+						width: interval.width * s,
+						height: 10
+
+					});
+
 					interval.on(/enter|exit/, function (event) {
 
 						svg(g, { 'stroke-width': interval.state ? null : 3 });
@@ -1740,7 +1924,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					interval.on('update', function (event) {
 
-						var x = interval.stopMin.position + (interval.stopMax.position - interval.stopMin.position) * interval.local;
+						var x = interval.min + interval.width * interval.local;
 
 						x = (x * s).toFixed(2);
 
@@ -1772,13 +1956,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var scrollA = new Scroll();
 
-	var _iteratorNormalCompletion18 = true;
-	var _didIteratorError18 = false;
-	var _iteratorError18 = undefined;
+	var _iteratorNormalCompletion19 = true;
+	var _didIteratorError19 = false;
+	var _iteratorError19 = undefined;
 
 	try {
-		for (var _iterator18 = document.querySelectorAll('.wrapper-a .block')[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
-			var element = _step18.value;
+		for (var _iterator19 = document.querySelectorAll('.wrapper-a .block')[Symbol.iterator](), _step19; !(_iteratorNormalCompletion19 = (_step19 = _iterator19.next()).done); _iteratorNormalCompletion19 = true) {
+			var element = _step19.value;
 
 
 			var stop = scrollA.stop('+=' + element.offsetHeight);
@@ -1786,16 +1970,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			element.innerHTML = stop.position;
 		}
 	} catch (err) {
-		_didIteratorError18 = true;
-		_iteratorError18 = err;
+		_didIteratorError19 = true;
+		_iteratorError19 = err;
 	} finally {
 		try {
-			if (!_iteratorNormalCompletion18 && _iterator18.return) {
-				_iterator18.return();
+			if (!_iteratorNormalCompletion19 && _iterator19.return) {
+				_iterator19.return();
 			}
 		} finally {
-			if (_didIteratorError18) {
-				throw _iteratorError18;
+			if (_didIteratorError19) {
+				throw _iteratorError19;
 			}
 		}
 	}
