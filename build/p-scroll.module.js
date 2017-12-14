@@ -960,12 +960,15 @@ class Scroll extends EventDispatcher {
 
 	}
 
-	getIntervals({ position, selector = null }) {
+	getIntervals({ position = NaN, selector = null }) {
 
-		let a = this.intervals.filter(interval => interval.contains(position));
+		let a = this.intervals;
+
+		if (!isNaN(position))
+			a = a.filter(interval => interval.contains(position));
 
 		if (selector)
-			return a.filter(interval => interval.tags.matches(selector))
+			a = a.filter(interval => interval.tags.matches(selector));
 
 		return a
 

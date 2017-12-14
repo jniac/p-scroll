@@ -1357,16 +1357,19 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}, {
 			key: 'getIntervals',
 			value: function getIntervals(_ref8) {
-				var position = _ref8.position,
+				var _ref8$position = _ref8.position,
+				    position = _ref8$position === undefined ? NaN : _ref8$position,
 				    _ref8$selector = _ref8.selector,
 				    selector = _ref8$selector === undefined ? null : _ref8$selector;
 
 
-				var a = this.intervals.filter(function (interval) {
+				var a = this.intervals;
+
+				if (!isNaN(position)) a = a.filter(function (interval) {
 					return interval.contains(position);
 				});
 
-				if (selector) return a.filter(function (interval) {
+				if (selector) a = a.filter(function (interval) {
 					return interval.tags.matches(selector);
 				});
 
