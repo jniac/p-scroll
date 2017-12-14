@@ -521,15 +521,21 @@ class ScrollItem extends EventDispatcher {
 
 		this.state = 1;
 
+		this.hasTrigger = false;
+
 	}
 
 	trigger(type) {
+
+		this.hasTrigger = true;
 
 		this.dispatchEvent(type);
 
 	}
 
-	update(state, local) {
+	update(state, local, triggerUpdate = false) {
+
+		this.hasTrigger = false;
 
 		let state_old = this.state_old = this.state;
 		this.state = state;
@@ -553,6 +559,9 @@ class ScrollItem extends EventDispatcher {
 
 		}
 
+		if (this.hasTrigger || triggerUpdate)
+			this.dispatchEvent('update');
+
 	}
 
 }
@@ -574,14 +583,14 @@ class Stop extends ScrollItem {
 
 		super();
 
-		this.id = stopCount++;
+		this.id = 'stop-' + stopCount++;
 
 		this.scroll = scroll;
 
 		this.position = position;
 		this.type = type;
 		this.margin = margin;
-		this.name = name || 'stop-' + this.id;
+		this.name = name || this.id;
 		this.color = color;
 
 		// this.update()
@@ -645,14 +654,14 @@ class Interval extends ScrollItem {
 
 		super();
 
-		this.id = intervalCount++;
+		this.id = 'interval-' + intervalCount++;
 
 		this.scroll = scroll;
 		this.stopMin = stopMin;
 		this.stopMax = stopMax;
 		this.margin = margin;
 		this.color = color;
-		this.name = name || 'interval-' + this.id;
+		this.name = name || this.id;
 
 		// this.update()
 
@@ -673,11 +682,10 @@ class Interval extends ScrollItem {
 		let localRaw_old = (position_old - this.stopMin.position) / width;
 		let local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw;
 		let state = localRaw < -this.margin / width ? -1 : localRaw > 1 + this.margin / width ? 1 : 0;
-		
-		super.update(state, local);
 
-		if ((localRaw >= 0 && localRaw <= 1) || localRaw_old >= 0 && localRaw_old <= 1)
-			this.dispatchEvent('update');
+		let triggerUpdate = (localRaw >= 0 && localRaw <= 1) || (localRaw_old >= 0 && localRaw_old <= 1);
+		
+		super.update(state, local, triggerUpdate);
 
 	}
 
@@ -829,6 +837,16 @@ class Scroll extends EventDispatcher {
 
 	}
 
+	getIntervalById(id) {
+
+		for (let interval of this.intervals)
+			if (interval.id === id)
+				return interval
+
+		return null
+
+	}
+
 	getStop({ position, type = null, tolerance = 1e-9 }) {
 
 		for (let stop of this.stops)
@@ -881,6 +899,16 @@ class Scroll extends EventDispatcher {
 		this.stops.splice(i, 0, stop);
 
 		return stop
+
+	}
+
+	intervalById(id) {
+
+		for (let interval of this.intervals)
+			if (interval.id === id)
+				return interval
+
+		return null
 
 	}
 
@@ -1118,6 +1146,16 @@ class ScrollHandler extends EventDispatcher {
 
 let svgNS = 'http://www.w3.org/2000/svg';
 
+function waitFor(duration) {
+	
+	return new Promise(resolve => {
+		
+		setTimeout(resolve, duration);
+		
+	})
+
+}
+
 function svg(node, attributes) {
 
 	if (node === 'svg') {
@@ -1133,8 +1171,9 @@ function svg(node, attributes) {
 
 	if (attributes && attributes.parent) {
 
-		attributes.parent.appendChild(node);
+		attributes.parent.insertBefore(node, attributes.before);
 		delete attributes.parent;
+		delete attributes.before;
 
 	}
 
@@ -1197,15 +1236,18 @@ class Tooltip {
 			parent: scrollSVG.g,
 			class: 'tooltip',
 
+			fill: 'var(--color)',
+			stroke: 'none',
 			visibility: 'hidden',
 
 		});
 
-		svg('rect', {
+		this.g.style.setProperty('transition', 'opacity .2s');
+
+		this.rect = svg('rect', {
 
 			parent: this.g,
 
-			fill: 'var(--color)',
 			x: 0,
 			y: 0,
 			width: 160, 
@@ -1265,10 +1307,28 @@ class Tooltip {
 		this.scrollSVG.svg.addEventListener('mouseleave', event => this.setTarget(null));
 	}
 
-	setTarget(value) {
+	async setTarget(value) {
 
-		if (this.target === value)
+		if (this.target === value || this.isWaiting)
 			return
+
+		if (this.target) {
+
+			let interval = this.scrollSVG.scroll.intervalById(this.target.dataset.id);
+
+			interval.off('update', this.intervalOnUpdate);
+
+			this.g.style.setProperty('opacity', 0);
+
+			this.target.style.removeProperty('stroke-width');
+
+			this.isWaiting = true;
+
+			await waitFor(100);
+
+			this.isWaiting = false;
+
+		}
 
 		this.target = value;
 
@@ -1277,11 +1337,23 @@ class Tooltip {
 		if (!this.target)
 			return
 
-		let interval = this.scrollSVG.scroll.intervals.find(v => v.id === parseFloat(this.target.dataset.id));
+		let interval = this.scrollSVG.scroll.intervalById(this.target.dataset.id);
+
+		interval.on('update', this.intervalOnUpdate, { thisArg: this });
+
+		this.g.style.setProperty('opacity', 1);
+
+		this.target.style.setProperty('stroke-width', 3);
 
 		this.name.innerHTML = interval.name;
 		this.range.innerHTML = interval.min.toFixed(1) + ' - ' + interval.max.toFixed(1);
-		this.info.innerHTML = `local: ${interval.local.toFixed(1)}, state: ${interval.state}`;
+		this.info.innerHTML = `local: ${interval.local.toFixed(2)}, state: ${interval.state}`;
+
+		svg(this.rect, {
+
+			fill: interval.color,
+
+		});
 
 		let attr = svgRetrieveAttributes(this.target.querySelector('line'));
 
@@ -1293,6 +1365,14 @@ class Tooltip {
 			transform: `translate(${x}, ${y})`,
 
 		});
+
+	}
+
+	intervalOnUpdate(event) {
+
+		let interval = event.target;
+
+		this.info.innerHTML = `local: ${interval.local.toFixed(2)}, state: ${interval.state}`;
 
 	}
 
@@ -1360,6 +1440,7 @@ class ScrollSVG {
 		this.line = svg('line', {
 
 			parent: this.g,
+			before: this.tooltip.g,
 
 			x1: this.scroll.stopByIndex(0).position * s,
 			x2: this.scroll.stopByIndex(-1).position * s,
@@ -1372,6 +1453,7 @@ class ScrollSVG {
 		let scrollPosition = svg('line', {
 
 			parent: this.g,
+			before: this.tooltip.g,
 
 			x1: this.scroll.position * s || 0,
 			x2: this.scroll.position * s || 0,
@@ -1401,6 +1483,7 @@ class ScrollSVG {
 			return svg('line', {
 
 				parent: this.g,
+				before: this.tooltip.g,
 
 				stroke: stop.color,
 
@@ -1441,6 +1524,7 @@ class ScrollSVG {
 			let g = svg('g', {
 
 				parent: this.g,
+				before: this.tooltip.g,
 
 				class: 'interval',
 				'data-id': interval.id, 

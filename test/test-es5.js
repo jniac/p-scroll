@@ -713,6 +713,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			_this2.state = 1;
 
+			_this2.hasTrigger = false;
+
 			return _this2;
 		}
 
@@ -720,11 +722,17 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			key: 'trigger',
 			value: function trigger(type) {
 
+				this.hasTrigger = true;
+
 				this.dispatchEvent(type);
 			}
 		}, {
 			key: 'update',
 			value: function update(state, local) {
+				var triggerUpdate = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+
+				this.hasTrigger = false;
 
 				var state_old = this.state_old = this.state;
 				this.state = state;
@@ -742,6 +750,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					if (state < 0 && state_old >= 0 || state > 0 && state_old <= 0) this.trigger('leave');
 				}
+
+				if (this.hasTrigger || triggerUpdate) this.dispatchEvent('update');
 			}
 		}]);
 
@@ -777,14 +787,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			var _this3 = _possibleConstructorReturn(this, (Stop.__proto__ || Object.getPrototypeOf(Stop)).call(this));
 
-			_this3.id = stopCount++;
+			_this3.id = 'stop-' + stopCount++;
 
 			_this3.scroll = scroll;
 
 			_this3.position = position;
 			_this3.type = type;
 			_this3.margin = margin;
-			_this3.name = name || 'stop-' + _this3.id;
+			_this3.name = name || _this3.id;
 			_this3.color = color;
 
 			// this.update()
@@ -852,14 +862,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 			var _this4 = _possibleConstructorReturn(this, (Interval.__proto__ || Object.getPrototypeOf(Interval)).call(this));
 
-			_this4.id = intervalCount++;
+			_this4.id = 'interval-' + intervalCount++;
 
 			_this4.scroll = scroll;
 			_this4.stopMin = stopMin;
 			_this4.stopMax = stopMax;
 			_this4.margin = margin;
 			_this4.color = color;
-			_this4.name = name || 'interval-' + _this4.id;
+			_this4.name = name || _this4.id;
 
 			// this.update()
 
@@ -880,9 +890,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var local = localRaw < 0 ? 0 : localRaw > 1 ? 1 : localRaw;
 				var state = localRaw < -this.margin / width ? -1 : localRaw > 1 + this.margin / width ? 1 : 0;
 
-				_get(Interval.prototype.__proto__ || Object.getPrototypeOf(Interval.prototype), 'update', this).call(this, state, local);
+				var triggerUpdate = localRaw >= 0 && localRaw <= 1 || localRaw_old >= 0 && localRaw_old <= 1;
 
-				if (localRaw >= 0 && localRaw <= 1 || localRaw_old >= 0 && localRaw_old <= 1) this.dispatchEvent('update');
+				_get(Interval.prototype.__proto__ || Object.getPrototypeOf(Interval.prototype), 'update', this).call(this, state, local, triggerUpdate);
 			}
 		}, {
 			key: 'remove',
@@ -1118,23 +1128,18 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				return null;
 			}
 		}, {
-			key: 'getStop',
-			value: function getStop(_ref5) {
-				var position = _ref5.position,
-				    _ref5$type = _ref5.type,
-				    type = _ref5$type === undefined ? null : _ref5$type,
-				    _ref5$tolerance = _ref5.tolerance,
-				    tolerance = _ref5$tolerance === undefined ? 1e-9 : _ref5$tolerance;
+			key: 'getIntervalById',
+			value: function getIntervalById(id) {
 				var _iteratorNormalCompletion13 = true;
 				var _didIteratorError13 = false;
 				var _iteratorError13 = undefined;
 
 				try {
 
-					for (var _iterator13 = this.stops[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
-						var stop = _step13.value;
+					for (var _iterator13 = this.intervals[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
+						var interval = _step13.value;
 
-						if ((type === null || type === stop.type) && Math.abs(stop.position - position) < tolerance) return stop;
+						if (interval.id === id) return interval;
 					}
 				} catch (err) {
 					_didIteratorError13 = true;
@@ -1147,6 +1152,42 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					} finally {
 						if (_didIteratorError13) {
 							throw _iteratorError13;
+						}
+					}
+				}
+
+				return null;
+			}
+		}, {
+			key: 'getStop',
+			value: function getStop(_ref5) {
+				var position = _ref5.position,
+				    _ref5$type = _ref5.type,
+				    type = _ref5$type === undefined ? null : _ref5$type,
+				    _ref5$tolerance = _ref5.tolerance,
+				    tolerance = _ref5$tolerance === undefined ? 1e-9 : _ref5$tolerance;
+				var _iteratorNormalCompletion14 = true;
+				var _didIteratorError14 = false;
+				var _iteratorError14 = undefined;
+
+				try {
+
+					for (var _iterator14 = this.stops[Symbol.iterator](), _step14; !(_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done); _iteratorNormalCompletion14 = true) {
+						var stop = _step14.value;
+
+						if ((type === null || type === stop.type) && Math.abs(stop.position - position) < tolerance) return stop;
+					}
+				} catch (err) {
+					_didIteratorError14 = true;
+					_iteratorError14 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion14 && _iterator14.return) {
+							_iterator14.return();
+						}
+					} finally {
+						if (_didIteratorError14) {
+							throw _iteratorError14;
 						}
 					}
 				}
@@ -1168,13 +1209,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				};
 
-				var _iteratorNormalCompletion14 = true;
-				var _didIteratorError14 = false;
-				var _iteratorError14 = undefined;
+				var _iteratorNormalCompletion15 = true;
+				var _didIteratorError15 = false;
+				var _iteratorError15 = undefined;
 
 				try {
-					for (var _iterator14 = this.stops[Symbol.iterator](), _step14; !(_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done); _iteratorNormalCompletion14 = true) {
-						var stop = _step14.value;
+					for (var _iterator15 = this.stops[Symbol.iterator](), _step15; !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
+						var stop = _step15.value;
 
 
 						if (type !== null && type !== stop.type) continue;
@@ -1188,16 +1229,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 						}
 					}
 				} catch (err) {
-					_didIteratorError14 = true;
-					_iteratorError14 = err;
+					_didIteratorError15 = true;
+					_iteratorError15 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion14 && _iterator14.return) {
-							_iterator14.return();
+						if (!_iteratorNormalCompletion15 && _iterator15.return) {
+							_iterator15.return();
 						}
 					} finally {
-						if (_didIteratorError14) {
-							throw _iteratorError14;
+						if (_didIteratorError15) {
+							throw _iteratorError15;
 						}
 					}
 				}
@@ -1230,34 +1271,65 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				return stop;
 			}
 		}, {
+			key: 'intervalById',
+			value: function intervalById(id) {
+				var _iteratorNormalCompletion16 = true;
+				var _didIteratorError16 = false;
+				var _iteratorError16 = undefined;
+
+				try {
+
+					for (var _iterator16 = this.intervals[Symbol.iterator](), _step16; !(_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done); _iteratorNormalCompletion16 = true) {
+						var interval = _step16.value;
+
+						if (interval.id === id) return interval;
+					}
+				} catch (err) {
+					_didIteratorError16 = true;
+					_iteratorError16 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion16 && _iterator16.return) {
+							_iterator16.return();
+						}
+					} finally {
+						if (_didIteratorError16) {
+							throw _iteratorError16;
+						}
+					}
+				}
+
+				return null;
+			}
+		}, {
 			key: 'getInterval',
 			value: function getInterval(_ref8) {
 				var min = _ref8.min,
 				    max = _ref8.max,
 				    _ref8$tolerance = _ref8.tolerance,
 				    tolerance = _ref8$tolerance === undefined ? 1e-9 : _ref8$tolerance;
-				var _iteratorNormalCompletion15 = true;
-				var _didIteratorError15 = false;
-				var _iteratorError15 = undefined;
+				var _iteratorNormalCompletion17 = true;
+				var _didIteratorError17 = false;
+				var _iteratorError17 = undefined;
 
 				try {
 
-					for (var _iterator15 = this.intervals[Symbol.iterator](), _step15; !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
-						var interval = _step15.value;
+					for (var _iterator17 = this.intervals[Symbol.iterator](), _step17; !(_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done); _iteratorNormalCompletion17 = true) {
+						var interval = _step17.value;
 
 						if (Math.abs(interval.min - min) < tolerance && Math.abs(interval.max - max) < tolerance) return interval;
 					}
 				} catch (err) {
-					_didIteratorError15 = true;
-					_iteratorError15 = err;
+					_didIteratorError17 = true;
+					_iteratorError17 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion15 && _iterator15.return) {
-							_iterator15.return();
+						if (!_iteratorNormalCompletion17 && _iterator17.return) {
+							_iterator17.return();
 						}
 					} finally {
-						if (_didIteratorError15) {
-							throw _iteratorError15;
+						if (_didIteratorError17) {
+							throw _iteratorError17;
 						}
 					}
 				}
@@ -1391,27 +1463,27 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		requestAnimationFrame(udpateScrolls);
 
-		var _iteratorNormalCompletion16 = true;
-		var _didIteratorError16 = false;
-		var _iteratorError16 = undefined;
+		var _iteratorNormalCompletion18 = true;
+		var _didIteratorError18 = false;
+		var _iteratorError18 = undefined;
 
 		try {
-			for (var _iterator16 = scrolls[Symbol.iterator](), _step16; !(_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done); _iteratorNormalCompletion16 = true) {
-				var _scroll = _step16.value;
+			for (var _iterator18 = scrolls[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
+				var _scroll = _step18.value;
 
 				if (_scroll.started) _scroll.update();
 			}
 		} catch (err) {
-			_didIteratorError16 = true;
-			_iteratorError16 = err;
+			_didIteratorError18 = true;
+			_iteratorError18 = err;
 		} finally {
 			try {
-				if (!_iteratorNormalCompletion16 && _iterator16.return) {
-					_iterator16.return();
+				if (!_iteratorNormalCompletion18 && _iterator18.return) {
+					_iterator18.return();
 				}
 			} finally {
-				if (_didIteratorError16) {
-					throw _iteratorError16;
+				if (_didIteratorError18) {
+					throw _iteratorError18;
 				}
 			}
 		}
@@ -1511,6 +1583,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var svgNS = 'http://www.w3.org/2000/svg';
 
+	function waitFor(duration) {
+
+		return new Promise(function (resolve) {
+
+			setTimeout(resolve, duration);
+		});
+	}
+
 	function svg(node, attributes) {
 
 		if (node === 'svg') {
@@ -1524,8 +1604,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		if (attributes && attributes.parent) {
 
-			attributes.parent.appendChild(node);
+			attributes.parent.insertBefore(node, attributes.before);
 			delete attributes.parent;
+			delete attributes.before;
 		}
 
 		for (var k in attributes) {
@@ -1537,13 +1618,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		var result = {};
 
-		var _iteratorNormalCompletion17 = true;
-		var _didIteratorError17 = false;
-		var _iteratorError17 = undefined;
+		var _iteratorNormalCompletion19 = true;
+		var _didIteratorError19 = false;
+		var _iteratorError19 = undefined;
 
 		try {
-			for (var _iterator17 = node.getAttributeNames()[Symbol.iterator](), _step17; !(_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done); _iteratorNormalCompletion17 = true) {
-				var k = _step17.value;
+			for (var _iterator19 = node.getAttributeNames()[Symbol.iterator](), _step19; !(_iteratorNormalCompletion19 = (_step19 = _iterator19.next()).done); _iteratorNormalCompletion19 = true) {
+				var k = _step19.value;
 
 
 				var value = node.getAttributeNS(null, k);
@@ -1551,16 +1632,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				result[k] = /\d$/.test(value) && !isNaN(value) ? parseFloat(value) : value;
 			}
 		} catch (err) {
-			_didIteratorError17 = true;
-			_iteratorError17 = err;
+			_didIteratorError19 = true;
+			_iteratorError19 = err;
 		} finally {
 			try {
-				if (!_iteratorNormalCompletion17 && _iterator17.return) {
-					_iterator17.return();
+				if (!_iteratorNormalCompletion19 && _iterator19.return) {
+					_iterator19.return();
 				}
 			} finally {
-				if (_didIteratorError17) {
-					throw _iteratorError17;
+				if (_didIteratorError19) {
+					throw _iteratorError19;
 				}
 			}
 		}
@@ -1604,15 +1685,18 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				parent: scrollSVG.g,
 				class: 'tooltip',
 
+				fill: 'var(--color)',
+				stroke: 'none',
 				visibility: 'hidden'
 
 			});
 
-			svg('rect', {
+			this.g.style.setProperty('transition', 'opacity .2s');
+
+			this.rect = svg('rect', {
 
 				parent: this.g,
 
-				fill: 'var(--color)',
 				x: 0,
 				y: 0,
 				width: 160,
@@ -1674,10 +1758,26 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 		_createClass(Tooltip, [{
 			key: 'setTarget',
-			value: function setTarget(value) {
-				var _this8 = this;
+			value: async function setTarget(value) {
 
-				if (this.target === value) return;
+				if (this.target === value || this.isWaiting) return;
+
+				if (this.target) {
+
+					var _interval = this.scrollSVG.scroll.intervalById(this.target.dataset.id);
+
+					_interval.off('update', this.intervalOnUpdate);
+
+					this.g.style.setProperty('opacity', 0);
+
+					this.target.style.removeProperty('stroke-width');
+
+					this.isWaiting = true;
+
+					await waitFor(100);
+
+					this.isWaiting = false;
+				}
 
 				this.target = value;
 
@@ -1685,13 +1785,23 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 				if (!this.target) return;
 
-				var interval = this.scrollSVG.scroll.intervals.find(function (v) {
-					return v.id === parseFloat(_this8.target.dataset.id);
-				});
+				var interval = this.scrollSVG.scroll.intervalById(this.target.dataset.id);
+
+				interval.on('update', this.intervalOnUpdate, { thisArg: this });
+
+				this.g.style.setProperty('opacity', 1);
+
+				this.target.style.setProperty('stroke-width', 3);
 
 				this.name.innerHTML = interval.name;
 				this.range.innerHTML = interval.min.toFixed(1) + ' - ' + interval.max.toFixed(1);
-				this.info.innerHTML = 'local: ' + interval.local.toFixed(1) + ', state: ' + interval.state;
+				this.info.innerHTML = 'local: ' + interval.local.toFixed(2) + ', state: ' + interval.state;
+
+				svg(this.rect, {
+
+					fill: interval.color
+
+				});
 
 				var attr = svgRetrieveAttributes(this.target.querySelector('line'));
 
@@ -1703,6 +1813,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 					transform: 'translate(' + x + ', ' + y + ')'
 
 				});
+			}
+		}, {
+			key: 'intervalOnUpdate',
+			value: function intervalOnUpdate(event) {
+
+				var interval = event.target;
+
+				this.info.innerHTML = 'local: ' + interval.local.toFixed(2) + ', state: ' + interval.state;
 			}
 		}]);
 
@@ -1744,15 +1862,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		_createClass(ScrollSVG, [{
 			key: 'init',
 			value: function init(scroll) {
-				var _this9 = this;
+				var _this8 = this;
 
 				this.scroll = scroll;
 
 				this.scroll.on('clear', function (event) {
 
-					while (_this9.g.firstChild) {
-						_this9.g.firstChild.remove();
-					}_this9.draw();
+					while (_this8.g.firstChild) {
+						_this8.g.firstChild.remove();
+					}_this8.draw();
 				});
 
 				this.draw();
@@ -1760,13 +1878,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 		}, {
 			key: 'draw',
 			value: function draw() {
-				var _this10 = this;
+				var _this9 = this;
 
 				var s = this.options.scale;
 
 				this.line = svg('line', {
 
 					parent: this.g,
+					before: this.tooltip.g,
 
 					x1: this.scroll.stopByIndex(0).position * s,
 					x2: this.scroll.stopByIndex(-1).position * s,
@@ -1779,6 +1898,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 				var scrollPosition = svg('line', {
 
 					parent: this.g,
+					before: this.tooltip.g,
 
 					x1: this.scroll.position * s || 0,
 					x2: this.scroll.position * s || 0,
@@ -1794,8 +1914,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					svg(scrollPosition, {
 
-						x1: _this10.scroll.position * s,
-						x2: _this10.scroll.position * s
+						x1: _this9.scroll.position * s,
+						x2: _this9.scroll.position * s
 
 					});
 				});
@@ -1806,7 +1926,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					return svg('line', {
 
-						parent: _this10.g,
+						parent: _this9.g,
+						before: _this9.tooltip.g,
 
 						stroke: stop.color,
 
@@ -1829,27 +1950,27 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 						var overlap = false;
 
-						var _iteratorNormalCompletion18 = true;
-						var _didIteratorError18 = false;
-						var _iteratorError18 = undefined;
+						var _iteratorNormalCompletion20 = true;
+						var _didIteratorError20 = false;
+						var _iteratorError20 = undefined;
 
 						try {
-							for (var _iterator18 = a[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
-								var b = _step18.value;
+							for (var _iterator20 = a[Symbol.iterator](), _step20; !(_iteratorNormalCompletion20 = (_step20 = _iterator20.next()).done); _iteratorNormalCompletion20 = true) {
+								var b = _step20.value;
 
 								overlap = overlap || b.overlap(interval);
 							}
 						} catch (err) {
-							_didIteratorError18 = true;
-							_iteratorError18 = err;
+							_didIteratorError20 = true;
+							_iteratorError20 = err;
 						} finally {
 							try {
-								if (!_iteratorNormalCompletion18 && _iterator18.return) {
-									_iterator18.return();
+								if (!_iteratorNormalCompletion20 && _iterator20.return) {
+									_iterator20.return();
 								}
 							} finally {
-								if (_didIteratorError18) {
-									throw _iteratorError18;
+								if (_didIteratorError20) {
+									throw _iteratorError20;
 								}
 							}
 						}
@@ -1863,7 +1984,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 					var g = svg('g', {
 
-						parent: _this10.g,
+						parent: _this9.g,
+						before: _this9.tooltip.g,
 
 						class: 'interval',
 						'data-id': interval.id,
@@ -1956,13 +2078,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	var scrollA = new Scroll();
 
-	var _iteratorNormalCompletion19 = true;
-	var _didIteratorError19 = false;
-	var _iteratorError19 = undefined;
+	var _iteratorNormalCompletion21 = true;
+	var _didIteratorError21 = false;
+	var _iteratorError21 = undefined;
 
 	try {
-		for (var _iterator19 = document.querySelectorAll('.wrapper-a .block')[Symbol.iterator](), _step19; !(_iteratorNormalCompletion19 = (_step19 = _iterator19.next()).done); _iteratorNormalCompletion19 = true) {
-			var element = _step19.value;
+		for (var _iterator21 = document.querySelectorAll('.wrapper-a .block')[Symbol.iterator](), _step21; !(_iteratorNormalCompletion21 = (_step21 = _iterator21.next()).done); _iteratorNormalCompletion21 = true) {
+			var element = _step21.value;
 
 
 			var stop = scrollA.stop('+=' + element.offsetHeight);
@@ -1970,16 +2092,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			element.innerHTML = stop.position;
 		}
 	} catch (err) {
-		_didIteratorError19 = true;
-		_iteratorError19 = err;
+		_didIteratorError21 = true;
+		_iteratorError21 = err;
 	} finally {
 		try {
-			if (!_iteratorNormalCompletion19 && _iterator19.return) {
-				_iterator19.return();
+			if (!_iteratorNormalCompletion21 && _iterator21.return) {
+				_iterator21.return();
 			}
 		} finally {
-			if (_didIteratorError19) {
-				throw _iteratorError19;
+			if (_didIteratorError21) {
+				throw _iteratorError21;
 			}
 		}
 	}
