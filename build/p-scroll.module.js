@@ -517,6 +517,104 @@ class Variable extends Value {
 
 }
 
+/**
+ * A point is inside a triangle if he is always on the same side (left or right) of each triangle's side (AB, BC, CA)
+ * if det > 0: ABC is direct (counterclockwise) 
+ * else: ABC is indirect (clockwise)
+
+ * op - : 20
+ * op * : 11
+ */
+
+
+
+
+/**
+ * op - : 18
+ * op * : 10
+ */
+
+
+
+
+/**
+ * A line is defined by two pairs of coordinates (P, V), 
+ * P is the origin of the line,
+ * V is the direction of the line.
+ * 
+ * k1 = det(v2, p2p1) / det(v1,v2)
+ * k2 = det(v1, p1p2) / det(v2,v1)
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * 
+ * AABB: Axis-Aligned minimum Bounding Box.
+ * 
+ * see: https://en.wikipedia.org/wiki/Minimum_bounding_box#Axis-aligned_minimum_bounding_box
+ *
+ */
+
 class Tags {
 
 	constructor() {
@@ -908,7 +1006,7 @@ class Scroll extends EventDispatcher {
 
 	}
 
-	nearestStop({ position, type = null }) {
+	nearestStop(position, { type = StopType.bound, mode = 'near' } = {}) {
 
 		let best = {
 
@@ -922,7 +1020,10 @@ class Scroll extends EventDispatcher {
 			if (type !== null && type !== stop.type)
 				continue
 
-			let d = Math.abs(position - stop.position);
+			let d = mode === 'near' ? Math.abs(position - stop.position) :
+				mode === 'prev' ? (position > stop.position ? position - stop.position : NaN) :
+				mode === 'next' ? (position < stop.position ? stop.position - position : NaN) :
+				NaN;
 
 			if (d < best.d) {
 
@@ -1016,9 +1117,27 @@ class Scroll extends EventDispatcher {
 
 		let prevision = this.position - this.velocity / Math.log(this.friction);
 
-		let target = this.nearestStop({ position: prevision, type: StopType.bound });
+		let target = this.nearestStop(prevision, { type: StopType.bound });
 
 		this.velocity = (this.position - target.position) * Math.log(this.friction);
+
+	}
+
+	toNextStop() {
+
+		let target = this.nearestStop(this.position + 1, { type: StopType.bound, mode: 'next' });
+
+		if (target)
+			this.velocity = (this.position - target.position) * Math.log(this.friction);
+
+	}
+
+	toPreviousStop() {
+
+		let target = this.nearestStop(this.position - 1, { type: StopType.bound, mode: 'prev' });
+
+		if (target)
+			this.velocity = (this.position - target.position) * Math.log(this.friction);
 
 	}
 
@@ -1108,65 +1227,106 @@ function onWheel(handler, event) {
 
 	let wheelX = handler.vars.wheelX;
 	let wheelY = handler.vars.wheelY;
+	let swipeX = handler.vars.swipeX;
+	let swipeY = handler.vars.swipeY;
 	let wheelSpeedX = handler.vars.wheelSpeedX;
 	let wheelSpeedY = handler.vars.wheelSpeedY;
+	let wheelSpeedSmoothX = handler.vars.wheelSpeedSmoothX;
+	let wheelSpeedSmoothY = handler.vars.wheelSpeedSmoothY;
 
 	// https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode
 	let unit = event.deltaMode === 0x00 ? 1 : 16;
 	let dx = event.deltaX * unit;
 	let dy = event.deltaY * unit;
 
-	if (!handler.mouseWheelID) {
+	if (!handler.wheelID) {
 
 		wheelX.reset(dx);
 		wheelY.reset(dy);
 
-		wheelSpeedX.reset(0);
-		wheelSpeedY.reset(0);
+		wheelSpeedX.reset(dx);
+		wheelSpeedY.reset(dy);
+
+		wheelSpeedSmoothX.reset(0);
+		wheelSpeedSmoothY.reset(0);
 
 		handler.dispatchEvent('wheel-start');
 
-		handler.mouseWheelID = setTimeout(() => mouseWheelStop(handler), wheelDiscreteInterval);
+		handler.wheelID = setTimeout(() => wheelStop(handler), wheelDiscreteInterval);
+		handler.wheeling = true;
 
 	} else {
 
-		wheelX.newValue(dx);
-		wheelY.newValue(dy);
+		wheelX.newValueIncrement(dx);
+		wheelY.newValueIncrement(dy);
 
-		wheelSpeedX.newValue(wheelX.average.value);
-		wheelSpeedY.newValue(wheelY.average.value);
+		swipeX.newValueIncrement(dx);
+		swipeY.newValueIncrement(dy);
+
+		if (swipeY.through(-handler.options.swipeThreshold))
+			handler.dispatchEvent('swipe-up');
+
+		if (swipeY.through(handler.options.swipeThreshold))
+			handler.dispatchEvent('swipe-down');
+
+		if (swipeX.through(-handler.options.swipeThreshold))
+			handler.dispatchEvent('swipe-left');
+
+		if (swipeX.through(handler.options.swipeThreshold))
+			handler.dispatchEvent('swipe-right');
+
+		wheelSpeedX.newValue(dx);
+		wheelSpeedY.newValue(dy);
+
+		wheelSpeedSmoothX.newValue(wheelSpeedX.average.value);
+		wheelSpeedSmoothY.newValue(wheelSpeedY.average.value);
+
+		// console.log(wheelX.value)
+
+		if (wheelSpeedSmoothX.growth.value > 1) {
+
+			handler.dispatchEvent('wheel-increase-speed-x');
+			swipeX.reset(0);
+
+		}
+
+		if (wheelSpeedSmoothY.growth.value > 1) {
+
+			handler.dispatchEvent('wheel-increase-speed-y', { speed: wheelSpeedSmoothY.value });
+			swipeY.reset(0);
+
+		}
 
 		let through;
 
-		if (wheelSpeedX.growth.value > 1)
-			handler.dispatchEvent('wheel-increase-speed-x');
-
-		if (wheelSpeedY.growth.value > 1)
-			handler.dispatchEvent('wheel-increase-speed-y', { speed: wheelSpeedY.value });
-
-		if (through = wheelSpeedX.growth.through(1))
+		if (through = wheelSpeedSmoothX.growth.through(1))
 			handler.dispatchEvent(through === -1 ? 'wheel-max-speed-x' : 'wheel-min-speed-x');
 
-		if (through = wheelSpeedY.growth.through(1))
+		if (through = wheelSpeedSmoothY.growth.through(1))
 			handler.dispatchEvent(through === -1 ? 'wheel-max-speed-y' : 'wheel-min-speed-y');
 
-		clearTimeout(handler.mouseWheelID);
-		handler.mouseWheelID = setTimeout(() => mouseWheelStop(handler), wheelDiscreteInterval);
+		clearTimeout(handler.wheelID);
+		handler.wheelID = setTimeout(() => wheelStop(handler), wheelDiscreteInterval);
 
 	}
 
 }
 
-function mouseWheelStop(handler) {
+function wheelStop(handler) {
 
-	handler.mouseWheelID = null;
+	handler.wheelID = null;
+	handler.wheeling = false;
 	handler.dispatchEvent('wheel-stop');
+
+}
+
+function mouseMove(handler, event) {
 
 }
 
 class ScrollHandler extends EventDispatcher {
 
-	constructor(element) {
+	constructor(element, options) {
 
 		super();
 
@@ -1178,14 +1338,27 @@ class ScrollHandler extends EventDispatcher {
 			wheelX: new Variable(0, 0, 10),
 			wheelY: new Variable(0, 0, 10),
 
-			wheelSpeedX: new Variable(0, 2, 10),
-			wheelSpeedY: new Variable(0, 2, 10),
+			swipeX: new Variable(0, 0, 1),
+			swipeY: new Variable(0, 0, 1),
+
+			wheelSpeedX: new Variable(0, 0, 10),
+			wheelSpeedY: new Variable(0, 0, 10),
+
+			wheelSpeedSmoothX: new Variable(0, 2, 10),
+			wheelSpeedSmoothY: new Variable(0, 2, 10),
 
 		};
+
+		this.options = Object.assign({
+
+			swipeThreshold: 100, //px
+
+		}, options);
 
 
 
 		element.addEventListener('wheel', event => onWheel(this, event));
+		element.addEventListener('mousemove', event => mouseMove(this, event));
 
 	}
 
@@ -1215,8 +1388,6 @@ class ScrollHandler extends EventDispatcher {
 
 
 
-let svgNS = 'http://www.w3.org/2000/svg';
-
 function waitFor(duration) {
 	
 	return new Promise(resolve => {
@@ -1226,6 +1397,8 @@ function waitFor(duration) {
 	})
 
 }
+
+let svgNS = 'http://www.w3.org/2000/svg';
 
 function svg(node, attributes) {
 

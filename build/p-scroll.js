@@ -706,6 +706,37 @@ var PScroll = function (exports) {
 		return Variable;
 	}(Value);
 
+	/**
+  * A point is inside a triangle if he is always on the same side (left or right) of each triangle's side (AB, BC, CA)
+  * if det > 0: ABC is direct (counterclockwise) 
+  * else: ABC is indirect (clockwise)
+ 
+  * op - : 20
+  * op * : 11
+  */
+
+	/**
+  * op - : 18
+  * op * : 10
+  */
+
+	/**
+  * A line is defined by two pairs of coordinates (P, V), 
+  * P is the origin of the line,
+  * V is the direction of the line.
+  * 
+  * k1 = det(v2, p2p1) / det(v1,v2)
+  * k2 = det(v1, p1p2) / det(v2,v1)
+  */
+
+	/**
+  * 
+  * AABB: Axis-Aligned minimum Bounding Box.
+  * 
+  * see: https://en.wikipedia.org/wiki/Minimum_bounding_box#Axis-aligned_minimum_bounding_box
+  *
+  */
+
 	var Tags = function () {
 		function Tags() {
 			_classCallCheck(this, Tags);
@@ -1249,11 +1280,12 @@ var PScroll = function (exports) {
 			}
 		}, {
 			key: 'nearestStop',
-			value: function nearestStop(_ref6) {
-				var position = _ref6.position,
+			value: function nearestStop(position) {
+				var _ref6 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
 				    _ref6$type = _ref6.type,
-				    type = _ref6$type === undefined ? null : _ref6$type;
-
+				    type = _ref6$type === undefined ? StopType.bound : _ref6$type,
+				    _ref6$mode = _ref6.mode,
+				    mode = _ref6$mode === undefined ? 'near' : _ref6$mode;
 
 				var best = {
 
@@ -1273,7 +1305,7 @@ var PScroll = function (exports) {
 
 						if (type !== null && type !== stop.type) continue;
 
-						var d = Math.abs(position - stop.position);
+						var d = mode === 'near' ? Math.abs(position - stop.position) : mode === 'prev' ? position > stop.position ? position - stop.position : NaN : mode === 'next' ? position < stop.position ? stop.position - position : NaN : NaN;
 
 						if (d < best.d) {
 
@@ -1448,9 +1480,25 @@ var PScroll = function (exports) {
 
 				var prevision = this.position - this.velocity / Math.log(this.friction);
 
-				var target = this.nearestStop({ position: prevision, type: StopType.bound });
+				var target = this.nearestStop(prevision, { type: StopType.bound });
 
 				this.velocity = (this.position - target.position) * Math.log(this.friction);
+			}
+		}, {
+			key: 'toNextStop',
+			value: function toNextStop() {
+
+				var target = this.nearestStop(this.position + 1, { type: StopType.bound, mode: 'next' });
+
+				if (target) this.velocity = (this.position - target.position) * Math.log(this.friction);
+			}
+		}, {
+			key: 'toPreviousStop',
+			value: function toPreviousStop() {
+
+				var target = this.nearestStop(this.position - 1, { type: StopType.bound, mode: 'prev' });
+
+				if (target) this.velocity = (this.position - target.position) * Math.log(this.friction);
 			}
 
 			// shorthands:
@@ -1580,62 +1628,97 @@ var PScroll = function (exports) {
 
 		var wheelX = handler.vars.wheelX;
 		var wheelY = handler.vars.wheelY;
+		var swipeX = handler.vars.swipeX;
+		var swipeY = handler.vars.swipeY;
 		var wheelSpeedX = handler.vars.wheelSpeedX;
 		var wheelSpeedY = handler.vars.wheelSpeedY;
+		var wheelSpeedSmoothX = handler.vars.wheelSpeedSmoothX;
+		var wheelSpeedSmoothY = handler.vars.wheelSpeedSmoothY;
 
 		// https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode
 		var unit = event.deltaMode === 0x00 ? 1 : 16;
 		var dx = event.deltaX * unit;
 		var dy = event.deltaY * unit;
 
-		if (!handler.mouseWheelID) {
+		if (!handler.wheelID) {
 
 			wheelX.reset(dx);
 			wheelY.reset(dy);
 
-			wheelSpeedX.reset(0);
-			wheelSpeedY.reset(0);
+			wheelSpeedX.reset(dx);
+			wheelSpeedY.reset(dy);
+
+			wheelSpeedSmoothX.reset(0);
+			wheelSpeedSmoothY.reset(0);
 
 			handler.dispatchEvent('wheel-start');
 
-			handler.mouseWheelID = setTimeout(function () {
-				return mouseWheelStop(handler);
+			handler.wheelID = setTimeout(function () {
+				return wheelStop(handler);
 			}, wheelDiscreteInterval);
+			handler.wheeling = true;
 		} else {
 
-			wheelX.newValue(dx);
-			wheelY.newValue(dy);
+			wheelX.newValueIncrement(dx);
+			wheelY.newValueIncrement(dy);
 
-			wheelSpeedX.newValue(wheelX.average.value);
-			wheelSpeedY.newValue(wheelY.average.value);
+			swipeX.newValueIncrement(dx);
+			swipeY.newValueIncrement(dy);
+
+			if (swipeY.through(-handler.options.swipeThreshold)) handler.dispatchEvent('swipe-up');
+
+			if (swipeY.through(handler.options.swipeThreshold)) handler.dispatchEvent('swipe-down');
+
+			if (swipeX.through(-handler.options.swipeThreshold)) handler.dispatchEvent('swipe-left');
+
+			if (swipeX.through(handler.options.swipeThreshold)) handler.dispatchEvent('swipe-right');
+
+			wheelSpeedX.newValue(dx);
+			wheelSpeedY.newValue(dy);
+
+			wheelSpeedSmoothX.newValue(wheelSpeedX.average.value);
+			wheelSpeedSmoothY.newValue(wheelSpeedY.average.value);
+
+			// console.log(wheelX.value)
+
+			if (wheelSpeedSmoothX.growth.value > 1) {
+
+				handler.dispatchEvent('wheel-increase-speed-x');
+				swipeX.reset(0);
+			}
+
+			if (wheelSpeedSmoothY.growth.value > 1) {
+
+				handler.dispatchEvent('wheel-increase-speed-y', { speed: wheelSpeedSmoothY.value });
+				swipeY.reset(0);
+			}
 
 			var through = void 0;
 
-			if (wheelSpeedX.growth.value > 1) handler.dispatchEvent('wheel-increase-speed-x');
+			if (through = wheelSpeedSmoothX.growth.through(1)) handler.dispatchEvent(through === -1 ? 'wheel-max-speed-x' : 'wheel-min-speed-x');
 
-			if (wheelSpeedY.growth.value > 1) handler.dispatchEvent('wheel-increase-speed-y', { speed: wheelSpeedY.value });
+			if (through = wheelSpeedSmoothY.growth.through(1)) handler.dispatchEvent(through === -1 ? 'wheel-max-speed-y' : 'wheel-min-speed-y');
 
-			if (through = wheelSpeedX.growth.through(1)) handler.dispatchEvent(through === -1 ? 'wheel-max-speed-x' : 'wheel-min-speed-x');
-
-			if (through = wheelSpeedY.growth.through(1)) handler.dispatchEvent(through === -1 ? 'wheel-max-speed-y' : 'wheel-min-speed-y');
-
-			clearTimeout(handler.mouseWheelID);
-			handler.mouseWheelID = setTimeout(function () {
-				return mouseWheelStop(handler);
+			clearTimeout(handler.wheelID);
+			handler.wheelID = setTimeout(function () {
+				return wheelStop(handler);
 			}, wheelDiscreteInterval);
 		}
 	}
 
-	function mouseWheelStop(handler) {
+	function wheelStop(handler) {
 
-		handler.mouseWheelID = null;
+		handler.wheelID = null;
+		handler.wheeling = false;
 		handler.dispatchEvent('wheel-stop');
 	}
+
+	function mouseMove(handler, event) {}
 
 	var ScrollHandler = function (_EventDispatcher3) {
 		_inherits(ScrollHandler, _EventDispatcher3);
 
-		function ScrollHandler(element) {
+		function ScrollHandler(element, options) {
 			_classCallCheck(this, ScrollHandler);
 
 			var _this6 = _possibleConstructorReturn(this, (ScrollHandler.__proto__ || Object.getPrototypeOf(ScrollHandler)).call(this));
@@ -1647,13 +1730,28 @@ var PScroll = function (exports) {
 				wheelX: new Variable(0, 0, 10),
 				wheelY: new Variable(0, 0, 10),
 
-				wheelSpeedX: new Variable(0, 2, 10),
-				wheelSpeedY: new Variable(0, 2, 10)
+				swipeX: new Variable(0, 0, 1),
+				swipeY: new Variable(0, 0, 1),
+
+				wheelSpeedX: new Variable(0, 0, 10),
+				wheelSpeedY: new Variable(0, 0, 10),
+
+				wheelSpeedSmoothX: new Variable(0, 2, 10),
+				wheelSpeedSmoothY: new Variable(0, 2, 10)
 
 			};
 
+			_this6.options = Object.assign({
+
+				swipeThreshold: 100 //px
+
+			}, options);
+
 			element.addEventListener('wheel', function (event) {
 				return onWheel(_this6, event);
+			});
+			element.addEventListener('mousemove', function (event) {
+				return mouseMove(_this6, event);
 			});
 
 			return _this6;
@@ -1662,8 +1760,6 @@ var PScroll = function (exports) {
 		return ScrollHandler;
 	}(EventDispatcher);
 
-	var svgNS = 'http://www.w3.org/2000/svg';
-
 	function waitFor(duration) {
 
 		return new Promise(function (resolve) {
@@ -1671,6 +1767,8 @@ var PScroll = function (exports) {
 			setTimeout(resolve, duration);
 		});
 	}
+
+	var svgNS = 'http://www.w3.org/2000/svg';
 
 	function svg(node, attributes) {
 
