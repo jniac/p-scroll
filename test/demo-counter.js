@@ -168,6 +168,7 @@ years.forEach((date, i) => {
 // create an handler to detect fundamental events (mouse wheel increase phase, break)
 
 let handler = new ScrollHandler('body')
+
 // handler.on('wheel-increase-speed-y', event => {
 
 // 	scroll.velocity = event.speed
@@ -182,18 +183,10 @@ let handler = new ScrollHandler('body')
 
 // })
 
-handler.on(/swipe/, event => {
 
-	if (event.type === 'swipe-left')
-		scroll.toNextStop()
-
-	if (event.type === 'swipe-right')
-		scroll.toPreviousStop()
-
-})
-
-
-
+// SWIPE
+handler.on('swipe-up', event => scroll.toPreviousStop())
+handler.on('swipe-down', event => scroll.toNextStop())
 
 
 

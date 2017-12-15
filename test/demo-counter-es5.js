@@ -2381,6 +2381,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 	// create an handler to detect fundamental events (mouse wheel increase phase, break)
 
 	var handler = new ScrollHandler('body');
+
 	// handler.on('wheel-increase-speed-y', event => {
 
 	// 	scroll.velocity = event.speed
@@ -2395,11 +2396,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 	// })
 
-	handler.on(/swipe/, function (event) {
 
-		if (event.type === 'swipe-left') scroll$1.toNextStop();
-
-		if (event.type === 'swipe-right') scroll$1.toPreviousStop();
+	// SWIPE
+	handler.on('swipe-up', function (event) {
+		return scroll$1.toPreviousStop();
+	});
+	handler.on('swipe-down', function (event) {
+		return scroll$1.toNextStop();
 	});
 
 	// debug
