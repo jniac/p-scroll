@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<style type="text/css">
+
+		body {
+			width: 100vw;
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			margin: 0;
+		}
+
+		.wrapper {
+			position: relative;
+			width: 800px;
+			height: 600px;
+			background-color: #eee;
+		}
+
+		.block {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+		}
+		
+	</style>
+</head>
+<body>
+
+	<div class="wrapper">
+		<div class="block" style="background-color: #FD8B5A"></div>
+		<div class="block" style="background-color: #FD7FB6"></div>
+		<div class="block" style="background-color: #A5D5FF"></div>
+	</div>
+
+	<script type="module">
+
+		import * as index from './index.js'
+		// expose exported variables to global scope (window, for easier debugging)
+		Object.assign(window, index)
+
+	</script>
+
+</body>
+</html>
